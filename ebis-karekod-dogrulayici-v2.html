@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#07111f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>EBİS Karekod Doğrulayıcı</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root {
+  --bg:       #07111f;
+  --s1:       #0d1d30;
+  --s2:       #122539;
+  --s3:       #1a3050;
+  --border:   #1e3555;
+  --accent:   #00b8e6;
+  --accent2:  #0055aa;
+  --ok:       #00e676;
+  --warn:     #ffab40;
+  --err:      #ff3d57;
+  --text:     #c5d8f0;
+  --dim:      #4a6a90;
+  --bright:   #e8f4ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ─ HEADER ─────────────────────────────────────────── */
+header{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:200;
+}
+.logo{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  width:40px;height:40px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;
+  color:#fff;letter-spacing:-0.5px;
+}
+.htext h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--bright);letter-spacing:0.3px}
+.htext p{font-size:11px;color:var(--dim)}
+.hbadge{
+  margin-left:auto;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);
+  color:var(--accent);font-size:10px;font-weight:700;letter-spacing:1px;
+  padding:3px 8px;border-radius:3px;text-transform:uppercase;white-space:nowrap;
+}
+
+/* ─ HTTPS WARNING ───────────────────────────────────── */
+#https-warn{
+  background:rgba(255,171,64,.08);border:1px solid rgba(255,171,64,.35);
+  border-radius:8px;margin:14px 14px 0;padding:11px 14px;display:none;
+}
+.https-warn-title{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;
+  color:var(--warn);letter-spacing:.5px;display:flex;align-items:center;gap:7px;margin-bottom:6px;
+}
+.https-warn-body{font-size:12px;color:var(--text);line-height:1.7;}
+.https-warn-body code{
+  background:rgba(0,0,0,.3);border:1px solid var(--border);
+  padding:2px 7px;border-radius:4px;font-size:11px;color:var(--accent);
+  display:inline-block;margin:2px 0;
+}
+.warn-tabs{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.warn-tab{
+  background:var(--s2);border:1px solid var(--border);border-radius:4px;
+  padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;
+  color:var(--dim);transition:.15s;
+}
+.warn-tab.active{background:rgba(0,184,230,.15);border-color:var(--accent);color:var(--accent)}
+.warn-panel{display:none}.warn-panel.active{display:block}
+
+/* ─ TABS ────────────────────────────────────────────── */
+main{padding:14px;max-width:620px;margin:0 auto}
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.mode-tab{
+  background:var(--s1);border:1px solid var(--border);border-radius:8px;
+  padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;
+}
+.mode-tab.active{background:rgba(0,184,230,.12);border-color:rgba(0,184,230,.5);}
+.mode-tab .tab-icon{font-size:26px;margin-bottom:4px}
+.mode-tab .tab-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;color:var(--dim)}
+.mode-tab.active .tab-label{color:var(--accent)}
+
+/* ─ CARD ────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.card-head{
+  padding:9px 14px;display:flex;align-items:center;gap:8px;
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);
+  border-bottom:1px solid var(--border);background:var(--s2);
+}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.pulse-dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ─ CAMERA ──────────────────────────────────────────── */
+.video-wrap{position:relative;background:#000;aspect-ratio:1;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-corners{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.corner-box{width:62%;aspect-ratio:1;position:relative}
+.corner-box::before,.corner-box::after,.corner-box span::before,.corner-box span::after{
+  content:'';position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid;
+}
+.corner-box::before{top:0;left:0;border-width:3px 0 0 3px}
+.corner-box::after{top:0;right:0;border-width:3px 3px 0 0}
+.corner-box span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.corner-box span::after{bottom:0;right:0;border-width:0 3px 3px 0}
+.scan-bar{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  animation:scanbar 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent);
+}
+@keyframes scanbar{0%,100%{top:0}50%{top:100%}}
+
+.cam-idle{
+  position:absolute;inset:0;background:rgba(7,17,31,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+}
+.cam-idle-icon{font-size:48px;opacity:.35}
+.cam-idle-txt{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;
+  border:none;border-radius:6px;cursor:pointer;transition:.15s;
+  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;padding:12px 28px;
+}
+.btn-primary:active{transform:scale(.97)}
+.btn-stop{
+  display:none;width:100%;padding:10px;
+  background:var(--s2);border:none;border-radius:0;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--err);cursor:pointer;
+  border-top:1px solid var(--border);
+}
+
+/* ─ UPLOAD / DRAG-DROP ──────────────────────────────── */
+#upload-zone{
+  margin:0;padding:0;
+  display:block;
+}
+.drop-area{
+  border:2px dashed var(--border);border-radius:10px;
+  padding:40px 20px;text-align:center;cursor:pointer;
+  transition:.2s;background:var(--s2);position:relative;overflow:hidden;
+}
+.drop-area:hover,.drop-area.dragging{
+  border-color:var(--accent);background:rgba(0,184,230,.06);
+}
+.drop-icon{font-size:44px;margin-bottom:10px;opacity:.5;display:block}
+.drop-title{
+  font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;
+  color:var(--bright);letter-spacing:.5px;margin-bottom:4px;
+}
+.drop-sub{font-size:13px;color:var(--dim);line-height:1.5}
+.drop-sub span{color:var(--accent);text-decoration:underline;cursor:pointer}
+#file-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-preview-wrap{display:none;position:relative}
+#img-preview{width:100%;border-radius:8px;display:block;max-height:380px;object-fit:contain;background:#000}
+.preview-overlay{
+  position:absolute;inset:0;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(7,17,31,.6);pointer-events:none;
+}
+.scan-spinner{
+  width:48px;height:48px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-clear-img{
+  width:100%;padding:10px;margin-top:8px;
+  background:var(--s2);border:1px solid var(--border);border-radius:6px;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);cursor:pointer;
+}
+.btn-clear-img:hover{color:var(--err);border-color:var(--err)}
+
+/* ─ MANUAL INPUT ────────────────────────────────────── */
+.manual-wrap{padding:14px}
+.manual-label{font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+#manual-input{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:monospace;font-size:12px;padding:10px 12px;
+  resize:vertical;min-height:80px;outline:none;transition:.15s;
+  line-height:1.5;
+}
+#manual-input:focus{border-color:var(--accent);background:rgba(0,184,230,.04)}
+.manual-hint{font-size:11px;color:var(--dim);margin-top:5px;font-style:italic}
+.btn-validate{
+  width:100%;margin-top:10px;padding:12px;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border:none;border-radius:6px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:#fff;
+}
+
+/* ─ RESULT ──────────────────────────────────────────── */
+#result-section{display:none}
+.result-head{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;
+}
+.result-head.ok{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.3)}
+.result-head.fail{background:rgba(255,61,87,.07);border-color:rgba(255,61,87,.3)}
+.result-icon-big{font-size:28px}
+.result-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700}
+.result-head.ok .result-title{color:var(--ok)}
+.result-head.fail .result-title{color:var(--err)}
+.result-sub{font-size:12px;color:var(--dim);margin-top:2px}
+
+.errors-wrap{
+  background:var(--s1);border:1px solid rgba(255,61,87,.3);border-top:none;
+  padding:10px 12px;display:flex;flex-direction:column;gap:7px;
+}
+.err-item{
+  background:rgba(255,61,87,.07);border-left:3px solid var(--err);
+  padding:8px 10px;border-radius:0 5px 5px 0;
+}
+.err-field{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--err);text-transform:uppercase;letter-spacing:.3px}
+.err-msg{font-size:13px;color:var(--text);margin-top:2px;line-height:1.4}
+.err-hint{font-size:11px;color:var(--dim);margin-top:3px;font-style:italic}
+
+.fields-card{background:var(--s1);border:1px solid var(--border);border-radius:0 0 8px 8px;margin-bottom:12px;overflow:hidden}
+.fields-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);background:var(--s2);border-bottom:1px solid var(--border)}
+.frow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 20px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);align-items:start}
+.frow:last-child{border-bottom:none}
+.frow.ferr{background:rgba(255,61,87,.05)}
+.fname{font-size:12px;color:var(--dim)}
+.fval{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--bright);word-break:break-all;font-weight:500}
+.fval.fempty{color:var(--dim);font-style:italic;font-weight:400;font-family:'Barlow',sans-serif}
+.fstat{font-size:14px;text-align:right}
+
+.raw-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.raw-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);background:var(--s2);border-bottom:1px solid var(--border)}
+.raw-body{padding:10px 14px;font-family:monospace;font-size:11px;color:var(--dim);word-break:break-all;line-height:1.7;max-height:90px;overflow-y:auto}
+.raw-body .gs-mark{color:var(--accent);font-weight:bold}
+
+.btn-rescan{
+  display:block;width:100%;padding:13px;margin-bottom:20px;
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);
+}
+
+/* ─ TOAST ───────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--s3);border:1px solid var(--border);
+  color:var(--text);padding:9px 18px;border-radius:20px;
+  font-size:13px;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;
+  pointer-events:none;
+}
+.toast.show{opacity:1}
+
+canvas#qr-canvas{display:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EBİS</div>
+  <div class="htext">
+    <h1>Karekod Doğrulayıcı</h1>
+    <p>Elektronik Beton İzleme Sistemi &middot; Format Sürüm 1</p>
+  </div>
+  <span class="hbadge">v2.0</span>
+</header>
+
+<!-- HTTPS WARNING -->
+<div id="https-warn">
+  <div class="https-warn-title">⚠ Kamera için HTTPS Gerekli</div>
+  <div class="https-warn-body">
+    Chrome/Firefox güvenlik politikası gereği kamera yalnızca <strong>HTTPS</strong> veya <strong>localhost</strong> üzerinden çalışır.<br>
+    <strong>Resimden okuma ve metin girişi her zaman çalışır.</strong> Kamera için:
+    <br><br>
+    <div class="warn-tabs">
+      <div class="warn-tab active" onclick="switchWarnTab('py')">Python</div>
+      <div class="warn-tab" onclick="switchWarnTab('node')">Node.js</div>
+      <div class="warn-tab" onclick="switchWarnTab('nginx')">Nginx/Apache</div>
+    </div>
+    <div class="warn-panel active" id="wpanel-py">
+      Bu HTML dosyasının bulunduğu klasörde terminal açıp:<br>
+      <code>python3 -m http.server 8080</code><br>
+      Sonra tarayıcıda açın: <code>http://localhost:8080/ebis-karekod-dogrulayici-v2.html</code>
+    </div>
+    <div class="warn-panel" id="wpanel-node">
+      <code>npx serve .</code><br>
+      Sonra: <code>http://localhost:3000/ebis-karekod-dogrulayici-v2.html</code>
+    </div>
+    <div class="warn-panel" id="wpanel-nginx">
+      Dosyayı sunucunuzun web klasörüne kopyalayın.<br>
+      SSL sertifikası varsa (Let's Encrypt) otomatik çalışır.<br>
+      Ya da <strong>GitHub Pages / Netlify</strong>'a yükleyin — ücretsiz HTTPS verir.
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- MODE TABS -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tab-cam" onclick="switchMode('cam')">
+      <div class="tab-icon">📷</div>
+      <div class="tab-label">Kamera ile Tara</div>
+    </div>
+    <div class="mode-tab" id="tab-img" onclick="switchMode('img')">
+      <div class="tab-icon">🖼️</div>
+      <div class="tab-label">Resimden Oku</div>
+    </div>
+  </div>
+
+  <!-- CAMERA PANEL -->
+  <div id="panel-cam">
+    <div class="card">
+      <div class="card-head">
+        <div class="pulse-dot" id="cam-dot"></div>
+        <span id="cam-status">Kamera Bekleniyor</span>
+      </div>
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="qr-canvas"></canvas>
+        <div class="scan-corners">
+          <div class="corner-box"><span></span>
+            <div class="scan-bar" id="scan-bar" style="display:none"></div>
+          </div>
+        </div>
+        <div class="cam-idle" id="cam-idle">
+          <div class="cam-idle-icon">📷</div>
+          <div class="cam-idle-txt">Kamera Kapalı</div>
+          <button class="btn-primary" onclick="startCamera()">Kamerayı Başlat</button>
+        </div>
+      </div>
+      <button class="btn-stop" id="btn-stop" onclick="stopCamera()">■ Durdur</button>
+    </div>
+    <!-- Manual input under camera panel -->
+    <div class="card">
+      <div class="card-head">⌨ Ham Metin ile Test</div>
+      <div class="manual-wrap">
+        <div class="manual-label">QR İçeriğini Yapıştırın (GS karakteri için │ kullanabilirsiniz)</div>
+        <textarea id="manual-input" placeholder="E1│A123456│0123456789│202309251330│12/60│C30│0,7│S3│N│0,4│22,4│0,41│06EBS01│CEM II/A-S 42,5 N│YAPICHEM AX4117│GRANÜLE CÜRUFU│-"></textarea>
+        <div class="manual-hint">Gerçek QR kodu tarayamıyorsanız içeriği buraya yapıştırabilirsiniz. │ karakteri Grup Ayraç (ASCII 29) yerine kabul edilir.</div>
+        <button class="btn-validate" onclick="validateManual()">Doğrula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMAGE PANEL -->
+  <div id="panel-img" style="display:none">
+    <div class="card" id="upload-zone">
+      <div class="card-head">🖼 QR Kodu İçeren Resmi Yükle</div>
+      <div style="padding:14px">
+        <div class="drop-area" id="drop-area">
+          <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Sürükle &amp; Bırak</div>
+          <div class="drop-sub">veya <span>dosya seç</span><br>PNG, JPG, WEBP, BMP desteklenir</div>
+        </div>
+        <div class="img-preview-wrap" id="img-preview-wrap">
+          <img id="img-preview" alt="Önizleme">
+          <div class="preview-overlay" id="scan-spinner-wrap" style="display:none">
+            <div class="scan-spinner"></div>
+          </div>
+        </div>
+        <button class="btn-clear-img" id="btn-clear-img" onclick="clearImage()" style="display:none">✕ Resmi Temizle</button>
+      </div>
+    </div>
+    <!-- Manual input under image panel too -->
+    <div class="card">
+      <div class="card-head">⌨ Ham Metin ile Test</div>
+      <div class="manual-wrap">
+        <div class="manual-label">QR İçeriğini Yapıştırın</div>
+        <textarea id="manual-input2" placeholder="E1│A123456│0123456789│202309251330│..."></textarea>
+        <div class="manual-hint">│ karakteri Grup Ayraç (ASCII 29) yerine kabul edilir.</div>
+        <button class="btn-validate" onclick="validateManual2()">Doğrula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-section">
+    <div class="result-head" id="result-head">
+      <span class="result-icon-big" id="result-icon"></span>
+      <div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
+    </div>
+    <div class="errors-wrap" id="errors-wrap" style="display:none"></div>
+    <div class="fields-card">
+      <div class="fields-head">Alan Detayları</div>
+      <div id="fields-list"></div>
+    </div>
+    <div class="raw-card">
+      <div class="raw-head">Ham QR İçeriği</div>
+      <div class="raw-body" id="raw-body"></div>
+    </div>
+    <button class="btn-rescan" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GS = String.fromCharCode(29);
+
+const FIELDS = [
+  {key:'ebis',     name:'EBİS Tanımlayıcı',        req:true },
+  {key:'serial',   name:'İrsaliye Seri No',          req:true },
+  {key:'tax',      name:'Vergi No',                  req:true },
+  {key:'dt',       name:'Sevk Tarihi/Saati',         req:true },
+  {key:'qty',      name:'Beton Miktarı (m³)',        req:true },
+  {key:'str',      name:'Dayanım Sınıfı',           req:true },
+  {key:'r728',     name:'7/28 Dayanım Oranı',       req:true },
+  {key:'slump',    name:'Kıvam Sınıfı',             req:true },
+  {key:'density',  name:'Yoğunluk Sınıfı',         req:true },
+  {key:'chloride', name:'Klorür İçeriği',           req:true },
+  {key:'dmax',     name:'Dmax (mm)',                 req:true },
+  {key:'wc',       name:'Su/Çimento Oranı',         req:true },
+  {key:'plate',    name:'Araç Plaka No',             req:true },
+  {key:'cement',   name:'Çimento Tipi',             req:false},
+  {key:'chem',     name:'Kimyasal Katkı',           req:false},
+  {key:'mineral',  name:'Mineral Katkı',            req:false},
+  {key:'fibers',   name:'Lifler',                   req:false},
+];
+
+// ── VALIDATION ────────────────────────────────────────
+function validate(raw) {
+  const errors = [], ferr = {};
+  const fv = {};
+
+  if (!raw || !raw.startsWith('E1')) {
+    errors.push({field:'EBİS Tanımlayıcı', msg:'QR kod EBİS formatında değil.', hint:'İçerik "E1" ile başlamalıdır. Bu bir EBİS karekodu olmayabilir.'});
+    return {valid:false, errors, fv, ferr};
+  }
+
+  const parts = raw.split(GS);
+  const keys = ['ebis','serial','tax','dt','qty','str','r728','slump','density','chloride','dmax','wc','plate','cement','chem','mineral','fibers'];
+  keys.forEach((k,i) => fv[k] = parts[i] !== undefined ? parts[i] : '');
+
+  if (parts.length !== 17) {
+    errors.push({field:'Alan Sayısı', msg:`17 alan bekleniyor, ${parts.length} alan bulundu.`, hint:'Toplam 16 adet Grup Ayraç karakteri (ASCII 29) kullanılmalıdır.'});
+  }
+
+  // 2 - Serial
+  const s = fv.serial;
+  if (!s.trim()) addErr(ferr,errors,'serial','İrsaliye Seri No','Seri numarası boş.','"AB12345678" gibi boşluksuz alfanümerik değer girilmeli.');
+  else if (/\s/.test(s)) addErr(ferr,errors,'serial','İrsaliye Seri No',`"${s}" — boşluk içeriyor.`,'Boşluksuz birleşik yazılmalıdır. Örnek: "AB12345678"');
+
+  // 3 - Tax
+  const t = fv.tax;
+  if (!t.trim()) addErr(ferr,errors,'tax','Vergi No','Vergi numarası boş.','10 haneli sayısal değer. Örnek: "0123456789"');
+  else if (!/^\d{10}$/.test(t)) addErr(ferr,errors,'tax','Vergi No',`"${t}" — 10 haneli sayısal değil.`,`${t.length} karakter var; tam 10 rakam olmalıdır. Harf veya özel karakter kabul edilmez.`);
+
+  // 4 - DateTime
+  const d = fv.dt;
+  if (!d.trim()) addErr(ferr,errors,'dt','Sevk Tarihi/Saati','Tarih/saat boş.','YYYYAAGGSSDD formatında 12 karakter. Örnek: "202309251330"');
+  else if (!/^\d{12}$/.test(d)) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`"${d}" — format hatalı.`,`12 haneli sayısal YYYYAAGGSSDD bekleniyor. ${d.length} karakter var.`);
+  else {
+    const yr=+d.slice(0,4),mo=+d.slice(4,6),dy=+d.slice(6,8),hr=+d.slice(8,10),mn=+d.slice(10,12);
+    if (yr<2019||yr>2099) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Yıl geçersiz: ${yr}`,'2019-2099 arasında olmalıdır.');
+    else if (mo<1||mo>12) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Ay geçersiz: ${mo}`,'01-12 arasında olmalıdır.');
+    else if (dy<1||dy>31) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Gün geçersiz: ${dy}`,'01-31 arasında olmalıdır.');
+    else if (hr>23) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Saat geçersiz: ${hr}`,'00-23 arasında (24 saat) olmalıdır.');
+    else if (mn>59) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Dakika geçersiz: ${mn}`,'00-59 arasında olmalıdır.');
+  }
+
+  // 5 - Quantity
+  const q = fv.qty;
+  if (!q.trim()) addErr(ferr,errors,'qty','Beton Miktarı','"Beton miktarı boş.','"mikser/toplam" formatında tam sayı. Örnek: "12/60"');
+  else if (!/^\d+\/\d+$/.test(q)) addErr(ferr,errors,'qty','Beton Miktarı',`"${q}" — format hatalı.`,'Tam sayı/tam sayı formatı olmalıdır. Ondalık kabul edilmez. Örnek: "12/60"');
+
+  // 6 - Strength
+  const st = fv.str;
+  if (!st.trim()) addErr(ferr,errors,'str','Dayanım Sınıfı','Dayanım sınıfı boş.','C veya LC önekiyle max 5 karakter. Örnek: "C30", "C50", "LC20"');
+  else if (!/^(LC|C)\d{2,3}$/.test(st)) addErr(ferr,errors,'str','Dayanım Sınıfı',`"${st}" — hatalı format.`,'"C" veya "LC" öneki + sayı gereklidir. Örnek: C25, C30, C50, LC20, LC35. Max 5 karakter.');
+
+  // 7 - 7/28 ratio
+  const r = fv.r728;
+  if (!r.trim()) addErr(ferr,errors,'r728','7/28 Dayanım Oranı','7/28 oranı boş.','Virgüllü ondalık. Örnek: "0,7" veya özel: "7/56-0,5"');
+  else if (!/^0,[0-9]+$/.test(r) && !/^7\/\d+-\d+,\d+$/.test(r)) addErr(ferr,errors,'r728','7/28 Dayanım Oranı',`"${r}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "0,7" veya "7/56-0,5". Nokta kullanılmamalıdır.');
+
+  // 8 - Slump
+  const sl = fv.slump;
+  if (!sl.trim()) addErr(ferr,errors,'slump','Kıvam Sınıfı','Kıvam sınıfı boş.','S1, S2, S3, S4 veya S5 değerlerinden biri olmalıdır.');
+  else if (!/^S[1-5]$/.test(sl)) addErr(ferr,errors,'slump','Kıvam Sınıfı',`"${sl}" — geçersiz değer.`,'Sadece S1, S2, S3, S4 veya S5 kabul edilir.');
+
+  // 9 - Density
+  const dn = fv.density;
+  if (!dn.trim()) addErr(ferr,errors,'density','Yoğunluk Sınıfı','Yoğunluk sınıfı boş.','N (Normal), H (Hafif) veya A (Ağır) girilmeli.');
+  else if (!['N','H','A'].includes(dn.toUpperCase())) addErr(ferr,errors,'density','Yoğunluk Sınıfı',`"${dn}" — geçersiz değer.`,'Sadece "N" (Normal Ağırlıklı), "H" (Hafif) veya "A" (Ağır) olabilir.');
+
+  // 10 - Chloride
+  const cl = fv.chloride;
+  if (!cl.trim()) addErr(ferr,errors,'chloride','Klorür İçeriği','Klorür içeriği boş.','Virgüllü ondalık. Örnek: "0,4" veya "1,0"');
+  else if (!/^\d+(,\d+)?$/.test(cl)) addErr(ferr,errors,'chloride','Klorür İçeriği',`"${cl}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "0,2", "0,4", "1,0"');
+
+  // 11 - Dmax
+  const dm = fv.dmax;
+  if (!dm.trim()) addErr(ferr,errors,'dmax','Dmax (mm)','Dmax değeri boş.','mm cinsinden sayı. Örnek: "25" veya "22,4"');
+  else if (!/^\d+(,\d+)?$/.test(dm)) addErr(ferr,errors,'dmax','Dmax (mm)',`"${dm}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "22,4" veya "25"');
+
+  // 12 - W/C
+  const wc = fv.wc;
+  if (!wc.trim()) addErr(ferr,errors,'wc','Su/Çimento Oranı','Su/Çimento oranı boş.','Virgüllü ondalık "0,XX" formatı. Örnek: "0,41"');
+  else if (!/^0,\d+$/.test(wc)) addErr(ferr,errors,'wc','Su/Çimento Oranı',`"${wc}" — format hatalı.`,'"0," ile başlayan virgüllü ondalık. Örnek: "0,41". Nokta KULLANILMAMALI.');
+
+  // 13 - Plate
+  const pl = fv.plate;
+  if (!pl.trim()) addErr(ferr,errors,'plate','Araç Plaka No','Plaka numarası boş.','Büyük harf boşluksuz max 10 karakter. Örnek: "06EBS01"');
+  else if (/\s/.test(pl)) addErr(ferr,errors,'plate','Araç Plaka No',`"${pl}" — boşluk içeriyor.`,'Boşluksuz birleşik büyük harflerle yazılmalıdır.');
+  else if (pl.length > 10) addErr(ferr,errors,'plate','Araç Plaka No',`Plaka ${pl.length} karakter — çok uzun.`,'Azami 10 karakter olmalıdır.');
+
+  // 14-17 optional length check
+  [{key:'cement',name:'Çimento Tipi'},{key:'chem',name:'Kimyasal Katkı'},{key:'mineral',name:'Mineral Katkı'},{key:'fibers',name:'Lifler'}]
+  .forEach(f => {
+    if (fv[f.key] && fv[f.key].length > 30)
+      addErr(ferr,errors,f.key,f.name,`${f.name} çok uzun: ${fv[f.key].length} karakter.`,'Azami 30 karakter olmalıdır.');
+  });
+
+  return {valid: errors.length===0, errors, fv, ferr};
+}
+
+function addErr(ferr, errors, key, field, msg, hint) {
+  ferr[key] = true;
+  errors.push({field, key, msg, hint});
+}
+
+// ── DISPLAY RESULT ────────────────────────────────────
+function showResult(result, rawData) {
+  const sec = document.getElementById('result-section');
+  sec.style.display = 'block';
+  setTimeout(() => sec.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+
+  const hdr = document.getElementById('result-head');
+  hdr.className = 'result-head ' + (result.valid ? 'ok' : 'fail');
+  document.getElementById('result-icon').textContent = result.valid ? '✅' : '❌';
+  document.getElementById('result-title').textContent = result.valid ? 'EBİS Formatına Uygun' : 'Format Hataları Tespit Edildi';
+  document.getElementById('result-sub').textContent = result.valid
+    ? 'Karekod tüm doğrulama kurallarını başarıyla geçti.'
+    : `${result.errors.length} adet sorun bulundu — aşağıda detaylar.`;
+
+  const ew = document.getElementById('errors-wrap');
+  if (result.errors.length > 0) {
+    ew.style.display = 'flex';
+    ew.innerHTML = result.errors.map(e => `
+      <div class="err-item">
+        <div class="err-field">⚠ ${e.field}</div>
+        <div class="err-msg">${e.msg}</div>
+        <div class="err-hint">💡 ${e.hint}</div>
+      </div>`).join('');
+  } else { ew.style.display = 'none'; }
+
+  const fl = document.getElementById('fields-list');
+  fl.innerHTML = FIELDS.map(f => {
+    const v = result.fv[f.key];
+    const hasErr = result.ferr[f.key];
+    const empty = !v || v.trim() === '' || v === '-';
+    let display = empty ? '(boş)' : v;
+    if (f.key === 'dt' && v && /^\d{12}$/.test(v))
+      display = `${v.slice(6,8)}.${v.slice(4,6)}.${v.slice(0,4)} ${v.slice(8,10)}:${v.slice(10,12)}`;
+    if (f.key === 'density' && v) display = {N:'N — Normal Ağırlıklı',H:'H — Hafif',A:'A — Ağır'}[v.toUpperCase()] || v;
+    return `<div class="frow ${hasErr?'ferr':''}">
+      <div class="fname">${f.name}</div>
+      <div class="fval ${empty?'fempty':''}">${display}</div>
+      <div class="fstat">${hasErr?'❌':empty?'—':'✓'}</div>
+    </div>`;
+  }).join('');
+
+  // Raw with GS highlighted
+  const rb = document.getElementById('raw-body');
+  const htmlRaw = rawData.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(new RegExp(GS,'g'), '<span class="gs-mark"> │ </span>');
+  rb.innerHTML = htmlRaw;
+}
+
+// ── CAMERA ────────────────────────────────────────────
+let stream=null, scanning=false, rafId=null;
+const video = document.getElementById('video');
+const canvas = document.getElementById('qr-canvas');
+const ctx = canvas.getContext('2d');
+
+async function startCamera() {
+  if (!isSecureContext) {
+    showToast('HTTPS veya localhost gereklidir. Yukarıdaki talimatlara bakın.');
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    video.srcObject = stream;
+    await video.play();
+    document.getElementById('cam-idle').style.display = 'none';
+    document.getElementById('btn-stop').style.display = 'block';
+    document.getElementById('scan-bar').style.display = 'block';
+    document.getElementById('cam-dot').classList.add('on');
+    document.getElementById('cam-status').textContent = 'Karekod Taranıyor…';
+    scanning = true;
+    scanLoop();
+  } catch(e) {
+    showToast('Kamera açılamadı: ' + (e.message||e));
+    checkHTTPS();
+  }
+}
+
+function stopCamera() {
+  scanning = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) stream.getTracks().forEach(t=>t.stop());
+  stream = null; video.srcObject = null;
+  document.getElementById('cam-idle').style.display = 'flex';
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('scan-bar').style.display = 'none';
+  document.getElementById('cam-dot').classList.remove('on');
+  document.getElementById('cam-status').textContent = 'Kamera Kapalı';
+}
+
+function scanLoop() {
+  if (!scanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    ctx.drawImage(video,0,0);
+    const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code = jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'});
+    if (code) { scanning=false; stopCamera(); processQR(code.data); return; }
+  }
+  rafId = requestAnimationFrame(scanLoop);
+}
+
+// ── IMAGE UPLOAD ──────────────────────────────────────
+const dropArea = document.getElementById('drop-area');
+dropArea.addEventListener('dragover', e=>{e.preventDefault();dropArea.classList.add('dragging')});
+dropArea.addEventListener('dragleave', ()=>dropArea.classList.remove('dragging'));
+dropArea.addEventListener('drop', e=>{
+  e.preventDefault(); dropArea.classList.remove('dragging');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) readImageFile(f);
+  else showToast('Lütfen bir resim dosyası sürükleyin.');
+});
+
+function handleFile(e) { const f=e.target.files[0]; if(f) readImageFile(f); }
+
+function readImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = document.getElementById('img-preview');
+    img.src = e.target.result;
+    document.getElementById('img-preview-wrap').style.display = 'block';
+    document.getElementById('drop-area').style.display = 'none';
+    document.getElementById('btn-clear-img').style.display = 'block';
+    document.getElementById('scan-spinner-wrap').style.display = 'flex';
+    img.onload = function() {
+      // Draw to offscreen canvas and scan
+      const oc = document.createElement('canvas');
+      oc.width = img.naturalWidth; oc.height = img.naturalHeight;
+      const ox = oc.getContext('2d');
+      ox.drawImage(img,0,0);
+      const id = ox.getImageData(0,0,oc.width,oc.height);
+      const code = jsQR(id.data, id.width, id.height, {inversionAttempts:'attemptBoth'});
+      document.getElementById('scan-spinner-wrap').style.display = 'none';
+      if (code) { processQR(code.data); }
+      else {
+        showToast('QR kod bulunamadı. Daha net veya yakın bir resim deneyin.');
+      }
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  document.getElementById('img-preview').src='';
+  document.getElementById('img-preview-wrap').style.display='none';
+  document.getElementById('drop-area').style.display='block';
+  document.getElementById('btn-clear-img').style.display='none';
+  document.getElementById('file-input').value='';
+  document.getElementById('result-section').style.display='none';
+}
+
+// ── MANUAL ────────────────────────────────────────────
+function validateManual() { _validateManual('manual-input'); }
+function validateManual2() { _validateManual('manual-input2'); }
+function _validateManual(id) {
+  let v = document.getElementById(id).value.trim();
+  if (!v) { showToast('Lütfen QR içeriğini girin.'); return; }
+  v = v.replace(/│/g, GS).replace(/\|/g, GS);
+  processQR(v);
+}
+
+function processQR(data) {
+  document.getElementById('cam-status').textContent = 'Karekod Okundu ✓';
+  const r = validate(data);
+  showResult(r, data);
+}
+
+// ── TABS ──────────────────────────────────────────────
+function switchMode(m) {
+  document.getElementById('panel-cam').style.display = m==='cam' ? 'block' : 'none';
+  document.getElementById('panel-img').style.display = m==='img' ? 'block' : 'none';
+  document.getElementById('tab-cam').className = 'mode-tab' + (m==='cam' ? ' active' : '');
+  document.getElementById('tab-img').className = 'mode-tab' + (m==='img' ? ' active' : '');
+  if (m==='cam') {} else stopCamera();
+}
+
+function switchWarnTab(id) {
+  document.querySelectorAll('.warn-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.warn-panel').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('wpanel-'+id).classList.add('active');
+}
+
+// ── HTTPS CHECK ───────────────────────────────────────
+function checkHTTPS() {
+  if (!isSecureContext) {
+    document.getElementById('https-warn').style.display = 'block';
+  }
+}
+
+function rescan() {
+  document.getElementById('result-section').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ── INIT ──────────────────────────────────────────────
+window.addEventListener('load', ()=>{
+  checkHTTPS();
+  // Ctrl+V paste support for desktop testing
+  document.addEventListener('paste', e=>{
+    const text = e.clipboardData.getData('text');
+    if (text && text.startsWith('E1')) { processQR(text); }
+  });
+});
+</script>
+</body>
+</html>
