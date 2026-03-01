@@ -1,39 +1,142 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="koyu">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#07111f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>EBİS Karekod Doğrulayıcı</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-:root {
-  --bg:       #07111f;
-  --s1:       #0d1d30;
-  --s2:       #122539;
-  --s3:       #1a3050;
-  --border:   #1e3555;
-  --accent:   #00b8e6;
-  --accent2:  #0055aa;
-  --ok:       #00e676;
-  --warn:     #ffab40;
-  --err:      #ff3d57;
-  --text:     #c5d8f0;
-  --dim:      #4a6a90;
-  --bright:   #e8f4ff;
+
+/* ════════════════════════════════════════════════════
+   TEMA DEĞİŞKENLERİ
+   ════════════════════════════════════════════════════ */
+
+/* ── KOYU (varsayılan) ── */
+[data-theme="koyu"] {
+  --bg:      #07111f;
+  --s1:      #0d1d30;
+  --s2:      #122539;
+  --s3:      #1a3050;
+  --border:  #1e3555;
+  --accent:  #00b8e6;
+  --accent2: #0055aa;
+  --ok:      #00e676;
+  --warn:    #ffab40;
+  --err:     #ff3d57;
+  --text:    #c5d8f0;
+  --label:   #8ab4d8;   /* alan başlıkları */
+  --dim:     #4a6a90;
+  --bright:  #e8f4ff;
+  --card-h:  rgba(0,0,0,.15);
+  --inp-bg:  #0a1828;
+  --shadow:  rgba(0,0,0,.4);
 }
+
+/* ── AÇIK ── */
+[data-theme="acik"] {
+  --bg:      #f0f4f8;
+  --s1:      #ffffff;
+  --s2:      #e8eef5;
+  --s3:      #dce4ee;
+  --border:  #c4d0de;
+  --accent:  #0070c0;
+  --accent2: #004f99;
+  --ok:      #00a854;
+  --warn:    #e07000;
+  --err:     #d0021b;
+  --text:    #1a2e44;
+  --label:   #3a5a7a;   /* alan başlıkları */
+  --dim:     #6a8aaa;
+  --bright:  #0a1828;
+  --card-h:  rgba(0,0,0,.04);
+  --inp-bg:  #f8fafc;
+  --shadow:  rgba(0,0,0,.1);
+}
+
+/* ── GECE MOR ── */
+[data-theme="gece"] {
+  --bg:      #100b1e;
+  --s1:      #18132b;
+  --s2:      #201a38;
+  --s3:      #2c2450;
+  --border:  #342c5a;
+  --accent:  #a78bfa;
+  --accent2: #6d28d9;
+  --ok:      #34d399;
+  --warn:    #fbbf24;
+  --err:     #f87171;
+  --text:    #d8d0f0;
+  --label:   #b0a0e0;
+  --dim:     #6050a0;
+  --bright:  #f0eaff;
+  --card-h:  rgba(0,0,0,.2);
+  --inp-bg:  #100b1e;
+  --shadow:  rgba(0,0,0,.5);
+}
+
+/* ── ORMAN YEŞİL ── */
+[data-theme="orman"] {
+  --bg:      #061810;
+  --s1:      #0c2418;
+  --s2:      #102d1e;
+  --s3:      #183c28;
+  --border:  #1e4a30;
+  --accent:  #4ade80;
+  --accent2: #166534;
+  --ok:      #86efac;
+  --warn:    #fde68a;
+  --err:     #fca5a5;
+  --text:    #c0e8d0;
+  --label:   #86c89a;
+  --dim:     #3a6a4a;
+  --bright:  #ecfdf5;
+  --card-h:  rgba(0,0,0,.2);
+  --inp-bg:  #061810;
+  --shadow:  rgba(0,0,0,.4);
+}
+
+/* ── AMBER TUĞ ── */
+[data-theme="amber"] {
+  --bg:      #1a1000;
+  --s1:      #271800;
+  --s2:      #301e00;
+  --s3:      #3d2800;
+  --border:  #4a3200;
+  --accent:  #f59e0b;
+  --accent2: #92400e;
+  --ok:      #86efac;
+  --warn:    #fcd34d;
+  --err:     #f87171;
+  --text:    #fde8b0;
+  --label:   #e8c060;
+  --dim:     #8a6010;
+  --bright:  #fffbeb;
+  --card-h:  rgba(0,0,0,.2);
+  --inp-bg:  #1a1000;
+  --shadow:  rgba(0,0,0,.4);
+}
+
+/* ════════════════════════════════════════════════════
+   GENEL STILLER
+   ════════════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden;
+  transition:background .3s,color .3s;
+}
 
-/* ─ HEADER ─────────────────────────────────────────── */
+/* ── HEADER ── */
 header{
   background:var(--s1);border-bottom:1px solid var(--border);
   padding:10px 16px;display:flex;align-items:center;gap:12px;
-  position:sticky;top:0;z-index:200;
+  position:sticky;top:0;z-index:300;
+  box-shadow:0 2px 10px var(--shadow);
+  transition:background .3s,border-color .3s;
 }
 .logo{
   background:linear-gradient(135deg,var(--accent2),var(--accent));
@@ -42,171 +145,125 @@ header{
   font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;
   color:#fff;letter-spacing:-0.5px;
 }
-.htext h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--bright);letter-spacing:0.3px}
-.htext p{font-size:11px;color:var(--dim)}
+.htext h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--bright);letter-spacing:0.3px;transition:color .3s}
+.htext p{font-size:11px;color:var(--dim);transition:color .3s}
 .hbadge{
-  margin-left:auto;background:rgba(0,184,230,.1);border:1px solid rgba(0,184,230,.25);
+  margin-left:auto;background:rgba(128,128,255,.1);border:1px solid rgba(128,128,255,.2);
   color:var(--accent);font-size:10px;font-weight:700;letter-spacing:1px;
   padding:3px 8px;border-radius:3px;text-transform:uppercase;white-space:nowrap;
+  transition:color .3s;
 }
 
-/* ─ HTTPS WARNING ───────────────────────────────────── */
+/* ── TEMA ÇUBUĞU ── */
+#theme-bar{
+  background:var(--s2);border-bottom:1px solid var(--border);
+  padding:8px 14px;display:flex;align-items:center;gap:8px;
+  flex-wrap:wrap;transition:background .3s,border-color .3s;
+}
+.theme-bar-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);
+  flex-shrink:0;margin-right:2px;
+}
+.theme-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:20px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;
+  border:1.5px solid transparent;
+  background:var(--s3);color:var(--label);
+  transition:all .2s;white-space:nowrap;
+}
+.theme-btn:hover{border-color:var(--accent);color:var(--bright)}
+.theme-btn.active{
+  border-color:var(--accent);
+  background:rgba(128,128,255,.1);
+  color:var(--accent);
+  box-shadow:0 0 0 2px rgba(128,128,255,.1);
+}
+.theme-swatch{
+  width:12px;height:12px;border-radius:50%;flex-shrink:0;
+  border:1.5px solid rgba(255,255,255,.2);
+}
+
+/* ── HTTPS UYARI ── */
 #https-warn{
-  background:rgba(255,171,64,.08);border:1px solid rgba(255,171,64,.35);
-  border-radius:8px;margin:14px 14px 0;padding:11px 14px;display:none;
+  background:rgba(255,171,64,.08);border:1px solid rgba(255,171,64,.3);
+  border-radius:8px;margin:12px 14px 0;padding:10px 14px;display:none;
 }
-.https-warn-title{
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;
-  color:var(--warn);letter-spacing:.5px;display:flex;align-items:center;gap:7px;margin-bottom:6px;
-}
-.https-warn-body{font-size:12px;color:var(--text);line-height:1.7;}
-.https-warn-body code{
-  background:rgba(0,0,0,.3);border:1px solid var(--border);
-  padding:2px 7px;border-radius:4px;font-size:11px;color:var(--accent);
-  display:inline-block;margin:2px 0;
-}
+.https-warn-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--warn);letter-spacing:.5px;display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.https-warn-body{font-size:12px;color:var(--text);line-height:1.7}
+.https-warn-body code{background:var(--card-h);border:1px solid var(--border);padding:2px 7px;border-radius:4px;font-size:11px;color:var(--accent);display:inline-block;margin:2px 0}
 .warn-tabs{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
-.warn-tab{
-  background:var(--s2);border:1px solid var(--border);border-radius:4px;
-  padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;
-  color:var(--dim);transition:.15s;
-}
+.warn-tab{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--dim);transition:.15s}
 .warn-tab.active{background:rgba(0,184,230,.15);border-color:var(--accent);color:var(--accent)}
 .warn-panel{display:none}.warn-panel.active{display:block}
 
-/* ─ TABS ────────────────────────────────────────────── */
+/* ── MAIN ── */
 main{padding:14px;max-width:620px;margin:0 auto}
+
+/* ── MODE TABS ── */
 .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.mode-tab{
-  background:var(--s1);border:1px solid var(--border);border-radius:8px;
-  padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;
-}
-.mode-tab.active{background:rgba(0,184,230,.12);border-color:rgba(0,184,230,.5);}
-.mode-tab .tab-icon{font-size:26px;margin-bottom:4px}
-.mode-tab .tab-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:.5px;text-transform:uppercase;color:var(--dim)}
+.mode-tab{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:12px 8px;cursor:pointer;text-align:center;transition:.2s}
+.mode-tab.active{background:rgba(128,128,255,.08);border-color:var(--accent)}
+.tab-icon{font-size:26px;margin-bottom:4px}
+.tab-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);transition:color .2s}
 .mode-tab.active .tab-label{color:var(--accent)}
 
-/* ─ CARD ────────────────────────────────────────────── */
-.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
-.card-head{
-  padding:9px 14px;display:flex;align-items:center;gap:8px;
-  font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);
-  border-bottom:1px solid var(--border);background:var(--s2);
-}
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;transition:background .3s,border-color .3s;box-shadow:0 2px 8px var(--shadow)}
+.card-head{padding:9px 14px;display:flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--label);border-bottom:1px solid var(--border);background:var(--s2);transition:background .3s,color .3s}
 .pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0}
 .pulse-dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* ─ CAMERA ──────────────────────────────────────────── */
+/* ── CAMERA ── */
 .video-wrap{position:relative;background:#000;aspect-ratio:1;overflow:hidden}
 #video{width:100%;height:100%;object-fit:cover;display:block}
 .scan-corners{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .corner-box{width:62%;aspect-ratio:1;position:relative}
-.corner-box::before,.corner-box::after,.corner-box span::before,.corner-box span::after{
-  content:'';position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid;
-}
+.corner-box::before,.corner-box::after,.corner-box span::before,.corner-box span::after{content:'';position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid}
 .corner-box::before{top:0;left:0;border-width:3px 0 0 3px}
 .corner-box::after{top:0;right:0;border-width:3px 3px 0 0}
 .corner-box span::before{bottom:0;left:0;border-width:0 0 3px 3px}
 .corner-box span::after{bottom:0;right:0;border-width:0 3px 3px 0}
-.scan-bar{
-  position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--accent),transparent);
-  animation:scanbar 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent);
-}
+.scan-bar{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scanbar 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent)}
 @keyframes scanbar{0%,100%{top:0}50%{top:100%}}
-
-.cam-idle{
-  position:absolute;inset:0;background:rgba(7,17,31,.88);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-}
+.cam-idle{position:absolute;inset:0;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .cam-idle-icon{font-size:48px;opacity:.35}
 .cam-idle-txt{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
-.btn-primary{
-  background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;
-  border:none;border-radius:6px;cursor:pointer;transition:.15s;
-  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;padding:12px 28px;
-}
+.btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:6px;cursor:pointer;transition:.15s;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px 28px}
 .btn-primary:active{transform:scale(.97)}
-.btn-stop{
-  display:none;width:100%;padding:10px;
-  background:var(--s2);border:none;border-radius:0;
-  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--err);cursor:pointer;
-  border-top:1px solid var(--border);
-}
+.btn-stop{display:none;width:100%;padding:10px;background:var(--s2);border:none;border-radius:0;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--err);cursor:pointer;border-top:1px solid var(--border)}
 
-/* ─ UPLOAD / DRAG-DROP ──────────────────────────────── */
-#upload-zone{
-  margin:0;padding:0;
-  display:block;
-}
-.drop-area{
-  border:2px dashed var(--border);border-radius:10px;
-  padding:40px 20px;text-align:center;cursor:pointer;
-  transition:.2s;background:var(--s2);position:relative;overflow:hidden;
-}
-.drop-area:hover,.drop-area.dragging{
-  border-color:var(--accent);background:rgba(0,184,230,.06);
-}
+/* ── UPLOAD ── */
+.drop-area{border:2px dashed var(--border);border-radius:10px;padding:40px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--s2);position:relative;overflow:hidden}
+.drop-area:hover,.drop-area.dragging{border-color:var(--accent);background:rgba(128,128,255,.05)}
 .drop-icon{font-size:44px;margin-bottom:10px;opacity:.5;display:block}
-.drop-title{
-  font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;
-  color:var(--bright);letter-spacing:.5px;margin-bottom:4px;
-}
+.drop-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--bright);letter-spacing:.5px;margin-bottom:4px}
 .drop-sub{font-size:13px;color:var(--dim);line-height:1.5}
 .drop-sub span{color:var(--accent);text-decoration:underline;cursor:pointer}
 #file-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .img-preview-wrap{display:none;position:relative}
 #img-preview{width:100%;border-radius:8px;display:block;max-height:380px;object-fit:contain;background:#000}
-.preview-overlay{
-  position:absolute;inset:0;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(7,17,31,.6);pointer-events:none;
-}
-.scan-spinner{
-  width:48px;height:48px;border:3px solid var(--border);
-  border-top-color:var(--accent);border-radius:50%;
-  animation:spin .8s linear infinite;
-}
+.preview-overlay{position:absolute;inset:0;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);pointer-events:none}
+.scan-spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.btn-clear-img{
-  width:100%;padding:10px;margin-top:8px;
-  background:var(--s2);border:1px solid var(--border);border-radius:6px;
-  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);cursor:pointer;
-}
+.btn-clear-img{width:100%;padding:10px;margin-top:8px;background:var(--s2);border:1px solid var(--border);border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);cursor:pointer}
 .btn-clear-img:hover{color:var(--err);border-color:var(--err)}
 
-/* ─ MANUAL INPUT ────────────────────────────────────── */
+/* ── MANUAL INPUT ── */
 .manual-wrap{padding:14px}
-.manual-label{font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
-#manual-input{
-  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;
-  color:var(--text);font-family:monospace;font-size:12px;padding:10px 12px;
-  resize:vertical;min-height:80px;outline:none;transition:.15s;
-  line-height:1.5;
-}
-#manual-input:focus{border-color:var(--accent);background:rgba(0,184,230,.04)}
+.manual-label{font-size:12px;color:var(--label);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+textarea.m-inp{width:100%;background:var(--inp-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:12px;padding:10px 12px;resize:vertical;min-height:80px;outline:none;transition:.15s;line-height:1.5}
+textarea.m-inp:focus{border-color:var(--accent)}
 .manual-hint{font-size:11px;color:var(--dim);margin-top:5px;font-style:italic}
-.btn-validate{
-  width:100%;margin-top:10px;padding:12px;
-  background:linear-gradient(135deg,var(--accent2),var(--accent));
-  border:none;border-radius:6px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;color:#fff;
-}
+.btn-validate{width:100%;margin-top:10px;padding:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:6px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff}
 
-/* ─ RESULT ──────────────────────────────────────────── */
+/* ── RESULT ── */
 #result-section{display:none}
-.result-head{
-  display:flex;align-items:center;gap:10px;padding:12px 14px;
-  border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;
-}
-.result-head.ok{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.3)}
+.result-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none}
+.result-head.ok{background:rgba(0,200,100,.07);border-color:rgba(0,200,100,.3)}
 .result-head.fail{background:rgba(255,61,87,.07);border-color:rgba(255,61,87,.3)}
 .result-icon-big{font-size:28px}
 .result-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700}
@@ -214,48 +271,52 @@ main{padding:14px;max-width:620px;margin:0 auto}
 .result-head.fail .result-title{color:var(--err)}
 .result-sub{font-size:12px;color:var(--dim);margin-top:2px}
 
-.errors-wrap{
-  background:var(--s1);border:1px solid rgba(255,61,87,.3);border-top:none;
-  padding:10px 12px;display:flex;flex-direction:column;gap:7px;
-}
-.err-item{
-  background:rgba(255,61,87,.07);border-left:3px solid var(--err);
-  padding:8px 10px;border-radius:0 5px 5px 0;
-}
+.errors-wrap{background:var(--s1);border:1px solid rgba(255,61,87,.3);border-top:none;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.err-item{background:rgba(255,61,87,.07);border-left:3px solid var(--err);padding:8px 10px;border-radius:0 5px 5px 0}
 .err-field{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--err);text-transform:uppercase;letter-spacing:.3px}
 .err-msg{font-size:13px;color:var(--text);margin-top:2px;line-height:1.4}
 .err-hint{font-size:11px;color:var(--dim);margin-top:3px;font-style:italic}
 
-.fields-card{background:var(--s1);border:1px solid var(--border);border-radius:0 0 8px 8px;margin-bottom:12px;overflow:hidden}
-.fields-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);background:var(--s2);border-bottom:1px solid var(--border)}
-.frow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 20px;gap:4px;padding:7px 14px;border-bottom:1px solid var(--border);align-items:start}
+/* ─────────────────────────────────────────────
+   ALAN TABLOSU — okunurluk iyileştirmesi
+   .fname artık --label değişkeni kullanıyor:
+   koyu temada #8ab4d8 (önceki #4a6a90'dan çok daha açık)
+   ───────────────────────────────────────────── */
+.fields-card{background:var(--s1);border:1px solid var(--border);border-radius:0 0 8px 8px;margin-bottom:12px;overflow:hidden;transition:background .3s}
+.fields-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--label);background:var(--s2);border-bottom:1px solid var(--border)}
+.frow{
+  display:grid;grid-template-columns:minmax(130px,40%) 1fr 22px;
+  gap:4px;padding:8px 14px;border-bottom:1px solid var(--border);align-items:start;
+  transition:background .15s;
+}
 .frow:last-child{border-bottom:none}
+.frow:hover{background:var(--card-h)}
 .frow.ferr{background:rgba(255,61,87,.05)}
-.fname{font-size:12px;color:var(--dim)}
-.fval{font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--bright);word-break:break-all;font-weight:500}
-.fval.fempty{color:var(--dim);font-style:italic;font-weight:400;font-family:'Barlow',sans-serif}
-.fstat{font-size:14px;text-align:right}
+.frow.ferr:hover{background:rgba(255,61,87,.09)}
 
-.raw-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
-.raw-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);background:var(--s2);border-bottom:1px solid var(--border)}
+/* ★ ANA DEĞİŞİKLİK: başlık rengi --label ile açık ★ */
+.fname{
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--label);        /* koyu temada #8ab4d8, açık temada #3a5a7a */
+  letter-spacing:.2px;
+  padding-top:1px;
+  transition:color .3s;
+}
+.fval{font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--bright);word-break:break-all;font-weight:600;transition:color .3s}
+.fval.fempty{color:var(--dim);font-style:italic;font-weight:400;font-family:'Barlow',sans-serif;font-size:12px}
+.fstat{font-size:14px;text-align:right;padding-top:1px}
+
+.raw-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;transition:background .3s}
+.raw-head{padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--label);background:var(--s2);border-bottom:1px solid var(--border)}
 .raw-body{padding:10px 14px;font-family:monospace;font-size:11px;color:var(--dim);word-break:break-all;line-height:1.7;max-height:90px;overflow-y:auto}
 .raw-body .gs-mark{color:var(--accent);font-weight:bold}
 
-.btn-rescan{
-  display:block;width:100%;padding:13px;margin-bottom:20px;
-  background:var(--s2);border:1px solid var(--border);border-radius:8px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);
-}
+.btn-rescan{display:block;width:100%;padding:13px;margin-bottom:20px;background:var(--s2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);transition:background .2s}
+.btn-rescan:hover{background:var(--s3)}
 
-/* ─ TOAST ───────────────────────────────────────────── */
-.toast{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:var(--s3);border:1px solid var(--border);
-  color:var(--text);padding:9px 18px;border-radius:20px;
-  font-size:13px;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;
-  pointer-events:none;
-}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border);color:var(--text);padding:9px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 16px var(--shadow)}
 .toast.show{opacity:1}
 
 canvas#qr-canvas{display:none}
@@ -264,46 +325,77 @@ canvas#qr-canvas{display:none}
 </head>
 <body>
 
+<!-- ══ HEADER ══════════════════════════════════════════ -->
 <header>
   <div class="logo">EBİS</div>
   <div class="htext">
     <h1>Karekod Doğrulayıcı</h1>
-    <p>Elektronik Beton İzleme Sistemi &middot; Format Sürüm 1</p>
+    <p>Elektronik Beton İzleme Sistemi &middot; Format v1</p>
   </div>
-  <span class="hbadge">v2.0</span>
+  <span class="hbadge">v3.0</span>
 </header>
 
-<!-- HTTPS WARNING -->
+<!-- ══ TEMA ÇUBUĞU ═════════════════════════════════════ -->
+<div id="theme-bar">
+  <span class="theme-bar-label">🎨 Tema:</span>
+
+  <button class="theme-btn active" data-t="koyu" onclick="setTheme('koyu',this)">
+    <span class="theme-swatch" style="background:linear-gradient(135deg,#0055aa,#00b8e6)"></span>
+    Koyu
+  </button>
+
+  <button class="theme-btn" data-t="acik" onclick="setTheme('acik',this)">
+    <span class="theme-swatch" style="background:linear-gradient(135deg,#004f99,#0070c0)"></span>
+    Açık
+  </button>
+
+  <button class="theme-btn" data-t="gece" onclick="setTheme('gece',this)">
+    <span class="theme-swatch" style="background:linear-gradient(135deg,#6d28d9,#a78bfa)"></span>
+    Gece Mor
+  </button>
+
+  <button class="theme-btn" data-t="orman" onclick="setTheme('orman',this)">
+    <span class="theme-swatch" style="background:linear-gradient(135deg,#166534,#4ade80)"></span>
+    Orman
+  </button>
+
+  <button class="theme-btn" data-t="amber" onclick="setTheme('amber',this)">
+    <span class="theme-swatch" style="background:linear-gradient(135deg,#92400e,#f59e0b)"></span>
+    Amber
+  </button>
+</div>
+
+<!-- ══ HTTPS UYARI ══════════════════════════════════════ -->
 <div id="https-warn">
   <div class="https-warn-title">⚠ Kamera için HTTPS Gerekli</div>
   <div class="https-warn-body">
-    Chrome/Firefox güvenlik politikası gereği kamera yalnızca <strong>HTTPS</strong> veya <strong>localhost</strong> üzerinden çalışır.<br>
-    <strong>Resimden okuma ve metin girişi her zaman çalışır.</strong> Kamera için:
-    <br><br>
+    Chrome/Firefox kameraya yalnızca <strong>HTTPS</strong> veya <strong>localhost</strong> üzerinden izin verir.<br>
+    <strong>Resimden okuma ve metin girişi her zaman çalışır.</strong><br><br>
     <div class="warn-tabs">
-      <div class="warn-tab active" onclick="switchWarnTab('py')">Python</div>
-      <div class="warn-tab" onclick="switchWarnTab('node')">Node.js</div>
-      <div class="warn-tab" onclick="switchWarnTab('nginx')">Nginx/Apache</div>
+      <div class="warn-tab active" onclick="switchWarnTab('py',event)">Python</div>
+      <div class="warn-tab" onclick="switchWarnTab('node',event)">Node.js</div>
+      <div class="warn-tab" onclick="switchWarnTab('pages',event)">GitHub Pages</div>
     </div>
     <div class="warn-panel active" id="wpanel-py">
-      Bu HTML dosyasının bulunduğu klasörde terminal açıp:<br>
+      Dosyanın bulunduğu klasörde terminal açıp:<br>
       <code>python3 -m http.server 8080</code><br>
-      Sonra tarayıcıda açın: <code>http://localhost:8080/ebis-karekod-dogrulayici-v2.html</code>
+      Sonra: <code>http://localhost:8080/ebis-karekod-dogrulayici-v3.html</code>
     </div>
     <div class="warn-panel" id="wpanel-node">
       <code>npx serve .</code><br>
-      Sonra: <code>http://localhost:3000/ebis-karekod-dogrulayici-v2.html</code>
+      Sonra: <code>http://localhost:3000/ebis-karekod-dogrulayici-v3.html</code>
     </div>
-    <div class="warn-panel" id="wpanel-nginx">
-      Dosyayı sunucunuzun web klasörüne kopyalayın.<br>
-      SSL sertifikası varsa (Let's Encrypt) otomatik çalışır.<br>
-      Ya da <strong>GitHub Pages / Netlify</strong>'a yükleyin — ücretsiz HTTPS verir.
+    <div class="warn-panel" id="wpanel-pages">
+      Dosyayı <code>index.html</code> adıyla GitHub'a yükleyin → Settings → Pages → main branch.<br>
+      <code>https://KULLANICI.github.io/REPO/</code> — Ücretsiz HTTPS otomatik gelir.
     </div>
   </div>
 </div>
 
+<!-- ══ MAIN ═════════════════════════════════════════════ -->
 <main>
-  <!-- MODE TABS -->
+
+  <!-- MOD SEKMELERİ -->
   <div class="mode-tabs">
     <div class="mode-tab active" id="tab-cam" onclick="switchMode('cam')">
       <div class="tab-icon">📷</div>
@@ -315,7 +407,7 @@ canvas#qr-canvas{display:none}
     </div>
   </div>
 
-  <!-- CAMERA PANEL -->
+  <!-- KAMERA PANELİ -->
   <div id="panel-cam">
     <div class="card">
       <div class="card-head">
@@ -338,28 +430,28 @@ canvas#qr-canvas{display:none}
       </div>
       <button class="btn-stop" id="btn-stop" onclick="stopCamera()">■ Durdur</button>
     </div>
-    <!-- Manual input under camera panel -->
+
     <div class="card">
       <div class="card-head">⌨ Ham Metin ile Test</div>
       <div class="manual-wrap">
-        <div class="manual-label">QR İçeriğini Yapıştırın (GS karakteri için │ kullanabilirsiniz)</div>
-        <textarea id="manual-input" placeholder="E1│A123456│0123456789│202309251330│12/60│C30│0,7│S3│N│0,4│22,4│0,41│06EBS01│CEM II/A-S 42,5 N│YAPICHEM AX4117│GRANÜLE CÜRUFU│-"></textarea>
-        <div class="manual-hint">Gerçek QR kodu tarayamıyorsanız içeriği buraya yapıştırabilirsiniz. │ karakteri Grup Ayraç (ASCII 29) yerine kabul edilir.</div>
-        <button class="btn-validate" onclick="validateManual()">Doğrula</button>
+        <div class="manual-label">QR İçeriğini Yapıştırın — │ veya | Grup Ayraç olarak kabul edilir</div>
+        <textarea class="m-inp" id="manual-input" placeholder="E1│A123456│0123456789│202309251330│12/60│C30│0,7│S3│N│0,4│22,4│0,41│06EBS01│CEM II/A-S 42,5 N│YAPICHEM AX4117│GRANÜLE CÜRUFU│-"></textarea>
+        <div class="manual-hint">Gerçek QR taranamıyorsa içeriği buraya yapıştırıp test edebilirsiniz.</div>
+        <button class="btn-validate" onclick="validateManual('manual-input')">Doğrula</button>
       </div>
     </div>
   </div>
 
-  <!-- IMAGE PANEL -->
+  <!-- RESİM PANELİ -->
   <div id="panel-img" style="display:none">
-    <div class="card" id="upload-zone">
+    <div class="card">
       <div class="card-head">🖼 QR Kodu İçeren Resmi Yükle</div>
       <div style="padding:14px">
         <div class="drop-area" id="drop-area">
           <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
           <div class="drop-icon">📂</div>
           <div class="drop-title">Sürükle &amp; Bırak</div>
-          <div class="drop-sub">veya <span>dosya seç</span><br>PNG, JPG, WEBP, BMP desteklenir</div>
+          <div class="drop-sub">veya <span>dosya seç</span><br>PNG · JPG · WEBP · BMP</div>
         </div>
         <div class="img-preview-wrap" id="img-preview-wrap">
           <img id="img-preview" alt="Önizleme">
@@ -370,19 +462,19 @@ canvas#qr-canvas{display:none}
         <button class="btn-clear-img" id="btn-clear-img" onclick="clearImage()" style="display:none">✕ Resmi Temizle</button>
       </div>
     </div>
-    <!-- Manual input under image panel too -->
+
     <div class="card">
       <div class="card-head">⌨ Ham Metin ile Test</div>
       <div class="manual-wrap">
         <div class="manual-label">QR İçeriğini Yapıştırın</div>
-        <textarea id="manual-input2" placeholder="E1│A123456│0123456789│202309251330│..."></textarea>
+        <textarea class="m-inp" id="manual-input2" placeholder="E1│A123456│0123456789│202309251330│..."></textarea>
         <div class="manual-hint">│ karakteri Grup Ayraç (ASCII 29) yerine kabul edilir.</div>
-        <button class="btn-validate" onclick="validateManual2()">Doğrula</button>
+        <button class="btn-validate" onclick="validateManual('manual-input2')">Doğrula</button>
       </div>
     </div>
   </div>
 
-  <!-- RESULT -->
+  <!-- SONUÇ -->
   <div id="result-section">
     <div class="result-head" id="result-head">
       <span class="result-icon-big" id="result-icon"></span>
@@ -402,140 +494,139 @@ canvas#qr-canvas{display:none}
     </div>
     <button class="btn-rescan" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
   </div>
-</main>
 
+</main>
 <div class="toast" id="toast"></div>
 
+<!-- ══ SCRIPT ════════════════════════════════════════════ -->
 <script>
 const GS = String.fromCharCode(29);
 
 const FIELDS = [
-  {key:'ebis',     name:'EBİS Tanımlayıcı',        req:true },
-  {key:'serial',   name:'İrsaliye Seri No',          req:true },
-  {key:'tax',      name:'Vergi No',                  req:true },
-  {key:'dt',       name:'Sevk Tarihi/Saati',         req:true },
-  {key:'qty',      name:'Beton Miktarı (m³)',        req:true },
-  {key:'str',      name:'Dayanım Sınıfı',           req:true },
-  {key:'r728',     name:'7/28 Dayanım Oranı',       req:true },
-  {key:'slump',    name:'Kıvam Sınıfı',             req:true },
-  {key:'density',  name:'Yoğunluk Sınıfı',         req:true },
-  {key:'chloride', name:'Klorür İçeriği',           req:true },
-  {key:'dmax',     name:'Dmax (mm)',                 req:true },
-  {key:'wc',       name:'Su/Çimento Oranı',         req:true },
-  {key:'plate',    name:'Araç Plaka No',             req:true },
-  {key:'cement',   name:'Çimento Tipi',             req:false},
-  {key:'chem',     name:'Kimyasal Katkı',           req:false},
-  {key:'mineral',  name:'Mineral Katkı',            req:false},
-  {key:'fibers',   name:'Lifler',                   req:false},
+  {key:'ebis',     name:'EBİS Tanımlayıcı',       req:true },
+  {key:'serial',   name:'İrsaliye Seri No',         req:true },
+  {key:'tax',      name:'Vergi No',                 req:true },
+  {key:'dt',       name:'Sevk Tarihi / Saati',      req:true },
+  {key:'qty',      name:'Beton Miktarı (m³)',       req:true },
+  {key:'str',      name:'Dayanım Sınıfı',          req:true },
+  {key:'r728',     name:'7/28 Dayanım Oranı',      req:true },
+  {key:'slump',    name:'Kıvam Sınıfı',            req:true },
+  {key:'density',  name:'Yoğunluk Sınıfı',        req:true },
+  {key:'chloride', name:'Klorür İçeriği',          req:true },
+  {key:'dmax',     name:'Dmax (mm)',                req:true },
+  {key:'wc',       name:'Su / Çimento Oranı',      req:true },
+  {key:'plate',    name:'Araç Plaka No',            req:true },
+  {key:'cement',   name:'Çimento Tipi',            req:false},
+  {key:'chem',     name:'Kimyasal Katkı',          req:false},
+  {key:'mineral',  name:'Mineral Katkı',           req:false},
+  {key:'fibers',   name:'Lifler',                  req:false},
 ];
 
-// ── VALIDATION ────────────────────────────────────────
-function validate(raw) {
-  const errors = [], ferr = {};
-  const fv = {};
+/* ── TEMA ──────────────────────────────────────────── */
+function setTheme(name, btn) {
+  document.documentElement.setAttribute('data-theme', name);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  localStorage.setItem('ebis-theme', name);
+}
 
+/* ── VALİDASYON ────────────────────────────────────── */
+function validate(raw) {
+  const errors = [], ferr = {}, fv = {};
   if (!raw || !raw.startsWith('E1')) {
     errors.push({field:'EBİS Tanımlayıcı', msg:'QR kod EBİS formatında değil.', hint:'İçerik "E1" ile başlamalıdır. Bu bir EBİS karekodu olmayabilir.'});
     return {valid:false, errors, fv, ferr};
   }
-
   const parts = raw.split(GS);
   const keys = ['ebis','serial','tax','dt','qty','str','r728','slump','density','chloride','dmax','wc','plate','cement','chem','mineral','fibers'];
   keys.forEach((k,i) => fv[k] = parts[i] !== undefined ? parts[i] : '');
 
-  if (parts.length !== 17) {
-    errors.push({field:'Alan Sayısı', msg:`17 alan bekleniyor, ${parts.length} alan bulundu.`, hint:'Toplam 16 adet Grup Ayraç karakteri (ASCII 29) kullanılmalıdır.'});
-  }
+  if (parts.length !== 17)
+    errors.push({field:'Alan Sayısı', msg:`17 alan bekleniyor, ${parts.length} bulundu.`, hint:'Toplam 16 Grup Ayraç (ASCII 29) kullanılmalıdır.'});
 
-  // 2 - Serial
-  const s = fv.serial;
-  if (!s.trim()) addErr(ferr,errors,'serial','İrsaliye Seri No','Seri numarası boş.','"AB12345678" gibi boşluksuz alfanümerik değer girilmeli.');
-  else if (/\s/.test(s)) addErr(ferr,errors,'serial','İrsaliye Seri No',`"${s}" — boşluk içeriyor.`,'Boşluksuz birleşik yazılmalıdır. Örnek: "AB12345678"');
+  const add = (k,f,m,h) => { ferr[k]=true; errors.push({field:f,key:k,msg:m,hint:h}); };
 
-  // 3 - Tax
-  const t = fv.tax;
-  if (!t.trim()) addErr(ferr,errors,'tax','Vergi No','Vergi numarası boş.','10 haneli sayısal değer. Örnek: "0123456789"');
-  else if (!/^\d{10}$/.test(t)) addErr(ferr,errors,'tax','Vergi No',`"${t}" — 10 haneli sayısal değil.`,`${t.length} karakter var; tam 10 rakam olmalıdır. Harf veya özel karakter kabul edilmez.`);
+  // Serial
+  const s=fv.serial;
+  if(!s.trim()) add('serial','İrsaliye Seri No','Seri numarası boş.','"AB12345678" gibi boşluksuz alfanümerik.');
+  else if(/\s/.test(s)) add('serial','İrsaliye Seri No',`"${s}" — boşluk var.`,'Boşluksuz birleşik yazılmalıdır.');
 
-  // 4 - DateTime
-  const d = fv.dt;
-  if (!d.trim()) addErr(ferr,errors,'dt','Sevk Tarihi/Saati','Tarih/saat boş.','YYYYAAGGSSDD formatında 12 karakter. Örnek: "202309251330"');
-  else if (!/^\d{12}$/.test(d)) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`"${d}" — format hatalı.`,`12 haneli sayısal YYYYAAGGSSDD bekleniyor. ${d.length} karakter var.`);
+  // Tax
+  const t=fv.tax;
+  if(!t.trim()) add('tax','Vergi No','Vergi numarası boş.','10 haneli sayısal. Örnek: "0123456789"');
+  else if(!/^\d{10}$/.test(t)) add('tax','Vergi No',`"${t}" — 10 haneli sayısal değil.`,`${t.length} karakter var; tam 10 rakam olmalı.`);
+
+  // DateTime
+  const d=fv.dt;
+  if(!d.trim()) add('dt','Sevk Tarihi/Saati','Tarih/saat boş.','YYYYAAGGSSDD — 12 karakter. Örnek: "202309251330"');
+  else if(!/^\d{12}$/.test(d)) add('dt','Sevk Tarihi/Saati',`"${d}" — format hatalı.`,`12 haneli sayısal bekleniyor, ${d.length} karakter var.`);
   else {
     const yr=+d.slice(0,4),mo=+d.slice(4,6),dy=+d.slice(6,8),hr=+d.slice(8,10),mn=+d.slice(10,12);
-    if (yr<2019||yr>2099) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Yıl geçersiz: ${yr}`,'2019-2099 arasında olmalıdır.');
-    else if (mo<1||mo>12) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Ay geçersiz: ${mo}`,'01-12 arasında olmalıdır.');
-    else if (dy<1||dy>31) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Gün geçersiz: ${dy}`,'01-31 arasında olmalıdır.');
-    else if (hr>23) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Saat geçersiz: ${hr}`,'00-23 arasında (24 saat) olmalıdır.');
-    else if (mn>59) addErr(ferr,errors,'dt','Sevk Tarihi/Saati',`Dakika geçersiz: ${mn}`,'00-59 arasında olmalıdır.');
+    if(yr<2019||yr>2099) add('dt','Sevk Tarihi/Saati',`Yıl geçersiz: ${yr}`,'2019-2099 arasında olmalı.');
+    else if(mo<1||mo>12) add('dt','Sevk Tarihi/Saati',`Ay geçersiz: ${mo}`,'01-12 arasında olmalı.');
+    else if(dy<1||dy>31) add('dt','Sevk Tarihi/Saati',`Gün geçersiz: ${dy}`,'01-31 arasında olmalı.');
+    else if(hr>23) add('dt','Sevk Tarihi/Saati',`Saat geçersiz: ${hr}`,'00-23 (24 saat formatı).');
+    else if(mn>59) add('dt','Sevk Tarihi/Saati',`Dakika geçersiz: ${mn}`,'00-59 arasında olmalı.');
   }
 
-  // 5 - Quantity
-  const q = fv.qty;
-  if (!q.trim()) addErr(ferr,errors,'qty','Beton Miktarı','"Beton miktarı boş.','"mikser/toplam" formatında tam sayı. Örnek: "12/60"');
-  else if (!/^\d+\/\d+$/.test(q)) addErr(ferr,errors,'qty','Beton Miktarı',`"${q}" — format hatalı.`,'Tam sayı/tam sayı formatı olmalıdır. Ondalık kabul edilmez. Örnek: "12/60"');
+  // Quantity
+  const q=fv.qty;
+  if(!q.trim()) add('qty','Beton Miktarı','Beton miktarı boş.','"mikser/toplam" tam sayı. Örnek: "12/60"');
+  else if(!/^\d+\/\d+$/.test(q)) add('qty','Beton Miktarı',`"${q}" — format hatalı.`,'Tam sayı/tam sayı. Ondalık kabul edilmez. Örnek: "12/60"');
 
-  // 6 - Strength
-  const st = fv.str;
-  if (!st.trim()) addErr(ferr,errors,'str','Dayanım Sınıfı','Dayanım sınıfı boş.','C veya LC önekiyle max 5 karakter. Örnek: "C30", "C50", "LC20"');
-  else if (!/^(LC|C)\d{2,3}$/.test(st)) addErr(ferr,errors,'str','Dayanım Sınıfı',`"${st}" — hatalı format.`,'"C" veya "LC" öneki + sayı gereklidir. Örnek: C25, C30, C50, LC20, LC35. Max 5 karakter.');
+  // Strength
+  const st=fv.str;
+  if(!st.trim()) add('str','Dayanım Sınıfı','Dayanım sınıfı boş.','C veya LC öneki + sayı. Örnek: "C30", "LC20"');
+  else if(!/^(LC|C)\d{2,3}$/.test(st)) add('str','Dayanım Sınıfı',`"${st}" — hatalı format.`,'"C" veya "LC" + 2-3 rakam. Örnek: C25, C50, LC35. Max 5 karakter.');
 
-  // 7 - 7/28 ratio
-  const r = fv.r728;
-  if (!r.trim()) addErr(ferr,errors,'r728','7/28 Dayanım Oranı','7/28 oranı boş.','Virgüllü ondalık. Örnek: "0,7" veya özel: "7/56-0,5"');
-  else if (!/^0,[0-9]+$/.test(r) && !/^7\/\d+-\d+,\d+$/.test(r)) addErr(ferr,errors,'r728','7/28 Dayanım Oranı',`"${r}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "0,7" veya "7/56-0,5". Nokta kullanılmamalıdır.');
+  // 7/28 ratio
+  const r=fv.r728;
+  if(!r.trim()) add('r728','7/28 Dayanım Oranı','7/28 oranı boş.','Virgüllü ondalık. Örnek: "0,7" veya "7/56-0,5"');
+  else if(!/^0,[0-9]+$/.test(r) && !/^7\/\d+-\d+,\d+$/.test(r)) add('r728','7/28 Dayanım Oranı',`"${r}" — format hatalı.`,'Ondalık ayracı VİRGÜL olmalı. Örnek: "0,7" veya "7/56-0,5"');
 
-  // 8 - Slump
-  const sl = fv.slump;
-  if (!sl.trim()) addErr(ferr,errors,'slump','Kıvam Sınıfı','Kıvam sınıfı boş.','S1, S2, S3, S4 veya S5 değerlerinden biri olmalıdır.');
-  else if (!/^S[1-5]$/.test(sl)) addErr(ferr,errors,'slump','Kıvam Sınıfı',`"${sl}" — geçersiz değer.`,'Sadece S1, S2, S3, S4 veya S5 kabul edilir.');
+  // Slump
+  const sl=fv.slump;
+  if(!sl.trim()) add('slump','Kıvam Sınıfı','Kıvam sınıfı boş.','S1, S2, S3, S4 veya S5 olmalı.');
+  else if(!/^S[1-5]$/.test(sl)) add('slump','Kıvam Sınıfı',`"${sl}" — geçersiz.`,'Sadece S1–S5 kabul edilir.');
 
-  // 9 - Density
-  const dn = fv.density;
-  if (!dn.trim()) addErr(ferr,errors,'density','Yoğunluk Sınıfı','Yoğunluk sınıfı boş.','N (Normal), H (Hafif) veya A (Ağır) girilmeli.');
-  else if (!['N','H','A'].includes(dn.toUpperCase())) addErr(ferr,errors,'density','Yoğunluk Sınıfı',`"${dn}" — geçersiz değer.`,'Sadece "N" (Normal Ağırlıklı), "H" (Hafif) veya "A" (Ağır) olabilir.');
+  // Density
+  const dn=fv.density;
+  if(!dn.trim()) add('density','Yoğunluk Sınıfı','Yoğunluk sınıfı boş.','N (Normal), H (Hafif) veya A (Ağır).');
+  else if(!['N','H','A'].includes(dn.toUpperCase())) add('density','Yoğunluk Sınıfı',`"${dn}" — geçersiz.`,'Sadece "N", "H" veya "A" olabilir.');
 
-  // 10 - Chloride
-  const cl = fv.chloride;
-  if (!cl.trim()) addErr(ferr,errors,'chloride','Klorür İçeriği','Klorür içeriği boş.','Virgüllü ondalık. Örnek: "0,4" veya "1,0"');
-  else if (!/^\d+(,\d+)?$/.test(cl)) addErr(ferr,errors,'chloride','Klorür İçeriği',`"${cl}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "0,2", "0,4", "1,0"');
+  // Chloride
+  const cl=fv.chloride;
+  if(!cl.trim()) add('chloride','Klorür İçeriği','Klorür içeriği boş.','Virgüllü ondalık. Örnek: "0,4" veya "1,0"');
+  else if(!/^\d+(,\d+)?$/.test(cl)) add('chloride','Klorür İçeriği',`"${cl}" — format hatalı.`,'Ondalık ayracı VİRGÜL. Örnek: "0,2", "0,4", "1,0"');
 
-  // 11 - Dmax
-  const dm = fv.dmax;
-  if (!dm.trim()) addErr(ferr,errors,'dmax','Dmax (mm)','Dmax değeri boş.','mm cinsinden sayı. Örnek: "25" veya "22,4"');
-  else if (!/^\d+(,\d+)?$/.test(dm)) addErr(ferr,errors,'dmax','Dmax (mm)',`"${dm}" — format hatalı.`,'Ondalık ayracı VIRGÜL olmalı. Örnek: "22,4" veya "25"');
+  // Dmax
+  const dm=fv.dmax;
+  if(!dm.trim()) add('dmax','Dmax (mm)','Dmax boş.','mm cinsinden. Örnek: "25" veya "22,4"');
+  else if(!/^\d+(,\d+)?$/.test(dm)) add('dmax','Dmax (mm)',`"${dm}" — format hatalı.`,'Ondalık ayracı VİRGÜL. Örnek: "22,4" veya "25"');
 
-  // 12 - W/C
-  const wc = fv.wc;
-  if (!wc.trim()) addErr(ferr,errors,'wc','Su/Çimento Oranı','Su/Çimento oranı boş.','Virgüllü ondalık "0,XX" formatı. Örnek: "0,41"');
-  else if (!/^0,\d+$/.test(wc)) addErr(ferr,errors,'wc','Su/Çimento Oranı',`"${wc}" — format hatalı.`,'"0," ile başlayan virgüllü ondalık. Örnek: "0,41". Nokta KULLANILMAMALI.');
+  // W/C ratio
+  const wc=fv.wc;
+  if(!wc.trim()) add('wc','Su/Çimento Oranı','Su/Çimento oranı boş.','Virgüllü ondalık "0,XX". Örnek: "0,41"');
+  else if(!/^0,\d+$/.test(wc)) add('wc','Su/Çimento Oranı',`"${wc}" — format hatalı.`,'"0," ile başlamalı, ayraç VİRGÜL. Örnek: "0,41"');
 
-  // 13 - Plate
-  const pl = fv.plate;
-  if (!pl.trim()) addErr(ferr,errors,'plate','Araç Plaka No','Plaka numarası boş.','Büyük harf boşluksuz max 10 karakter. Örnek: "06EBS01"');
-  else if (/\s/.test(pl)) addErr(ferr,errors,'plate','Araç Plaka No',`"${pl}" — boşluk içeriyor.`,'Boşluksuz birleşik büyük harflerle yazılmalıdır.');
-  else if (pl.length > 10) addErr(ferr,errors,'plate','Araç Plaka No',`Plaka ${pl.length} karakter — çok uzun.`,'Azami 10 karakter olmalıdır.');
+  // Plate
+  const pl=fv.plate;
+  if(!pl.trim()) add('plate','Araç Plaka No','Plaka boş.','Büyük harf boşluksuz max 10 karakter. Örnek: "06EBS01"');
+  else if(/\s/.test(pl)) add('plate','Araç Plaka No',`"${pl}" — boşluk var.`,'Boşluksuz büyük harflerle.');
+  else if(pl.length>10) add('plate','Araç Plaka No',`${pl.length} karakter — çok uzun.`,'Azami 10 karakter.');
 
-  // 14-17 optional length check
+  // Optional fields
   [{key:'cement',name:'Çimento Tipi'},{key:'chem',name:'Kimyasal Katkı'},{key:'mineral',name:'Mineral Katkı'},{key:'fibers',name:'Lifler'}]
-  .forEach(f => {
-    if (fv[f.key] && fv[f.key].length > 30)
-      addErr(ferr,errors,f.key,f.name,`${f.name} çok uzun: ${fv[f.key].length} karakter.`,'Azami 30 karakter olmalıdır.');
-  });
+  .forEach(f=>{ if(fv[f.key]&&fv[f.key].length>30) add(f.key,f.name,`${f.name}: ${fv[f.key].length} karakter — çok uzun.`,'Azami 30 karakter.'); });
 
-  return {valid: errors.length===0, errors, fv, ferr};
+  return {valid:errors.length===0, errors, fv, ferr};
 }
 
-function addErr(ferr, errors, key, field, msg, hint) {
-  ferr[key] = true;
-  errors.push({field, key, msg, hint});
-}
-
-// ── DISPLAY RESULT ────────────────────────────────────
+/* ── SONUÇ GÖSTER ──────────────────────────────────── */
 function showResult(result, rawData) {
   const sec = document.getElementById('result-section');
   sec.style.display = 'block';
-  setTimeout(() => sec.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+  setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),100);
 
   const hdr = document.getElementById('result-head');
   hdr.className = 'result-head ' + (result.valid ? 'ok' : 'fail');
@@ -546,132 +637,123 @@ function showResult(result, rawData) {
     : `${result.errors.length} adet sorun bulundu — aşağıda detaylar.`;
 
   const ew = document.getElementById('errors-wrap');
-  if (result.errors.length > 0) {
-    ew.style.display = 'flex';
-    ew.innerHTML = result.errors.map(e => `
+  if (result.errors.length>0) {
+    ew.style.display='flex';
+    ew.innerHTML = result.errors.map(e=>`
       <div class="err-item">
         <div class="err-field">⚠ ${e.field}</div>
         <div class="err-msg">${e.msg}</div>
         <div class="err-hint">💡 ${e.hint}</div>
       </div>`).join('');
-  } else { ew.style.display = 'none'; }
+  } else { ew.style.display='none'; }
 
-  const fl = document.getElementById('fields-list');
-  fl.innerHTML = FIELDS.map(f => {
+  const DENSITY_MAP = {N:'N — Normal Ağırlıklı',H:'H — Hafif Beton',A:'A — Ağır Beton'};
+  document.getElementById('fields-list').innerHTML = FIELDS.map(f=>{
     const v = result.fv[f.key];
     const hasErr = result.ferr[f.key];
-    const empty = !v || v.trim() === '' || v === '-';
+    const empty = !v || v.trim()==='' || v==='-';
     let display = empty ? '(boş)' : v;
-    if (f.key === 'dt' && v && /^\d{12}$/.test(v))
-      display = `${v.slice(6,8)}.${v.slice(4,6)}.${v.slice(0,4)} ${v.slice(8,10)}:${v.slice(10,12)}`;
-    if (f.key === 'density' && v) display = {N:'N — Normal Ağırlıklı',H:'H — Hafif',A:'A — Ağır'}[v.toUpperCase()] || v;
+    if (f.key==='dt' && v && /^\d{12}$/.test(v))
+      display=`${v.slice(6,8)}.${v.slice(4,6)}.${v.slice(0,4)} — ${v.slice(8,10)}:${v.slice(10,12)}`;
+    if (f.key==='density' && v) display = DENSITY_MAP[v.toUpperCase()] || v;
     return `<div class="frow ${hasErr?'ferr':''}">
       <div class="fname">${f.name}</div>
       <div class="fval ${empty?'fempty':''}">${display}</div>
-      <div class="fstat">${hasErr?'❌':empty?'—':'✓'}</div>
+      <div class="fstat">${hasErr?'❌':empty?'<span style="color:var(--dim)">—</span>':'<span style="color:var(--ok)">✓</span>'}</div>
     </div>`;
   }).join('');
 
-  // Raw with GS highlighted
-  const rb = document.getElementById('raw-body');
   const htmlRaw = rawData.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(new RegExp(GS,'g'), '<span class="gs-mark"> │ </span>');
-  rb.innerHTML = htmlRaw;
+    .replace(new RegExp(GS,'g'),'<span class="gs-mark"> │ </span>');
+  document.getElementById('raw-body').innerHTML = htmlRaw;
 }
 
-// ── CAMERA ────────────────────────────────────────────
+/* ── KAMERA ────────────────────────────────────────── */
 let stream=null, scanning=false, rafId=null;
-const video = document.getElementById('video');
-const canvas = document.getElementById('qr-canvas');
-const ctx = canvas.getContext('2d');
+const video=document.getElementById('video');
+const canvas=document.getElementById('qr-canvas');
+const ctx=canvas.getContext('2d');
 
 async function startCamera() {
   if (!isSecureContext) {
-    showToast('HTTPS veya localhost gereklidir. Yukarıdaki talimatlara bakın.');
+    document.getElementById('https-warn').style.display='block';
+    showToast('HTTPS veya localhost gereklidir.');
     return;
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
-    video.srcObject = stream;
-    await video.play();
-    document.getElementById('cam-idle').style.display = 'none';
-    document.getElementById('btn-stop').style.display = 'block';
-    document.getElementById('scan-bar').style.display = 'block';
+    video.srcObject=stream; await video.play();
+    document.getElementById('cam-idle').style.display='none';
+    document.getElementById('btn-stop').style.display='block';
+    document.getElementById('scan-bar').style.display='block';
     document.getElementById('cam-dot').classList.add('on');
-    document.getElementById('cam-status').textContent = 'Karekod Taranıyor…';
-    scanning = true;
-    scanLoop();
+    document.getElementById('cam-status').textContent='Karekod Taranıyor…';
+    scanning=true; scanLoop();
   } catch(e) {
-    showToast('Kamera açılamadı: ' + (e.message||e));
-    checkHTTPS();
+    showToast('Kamera açılamadı: '+(e.message||e));
+    document.getElementById('https-warn').style.display='block';
   }
 }
 
 function stopCamera() {
-  scanning = false;
-  if (rafId) cancelAnimationFrame(rafId);
-  if (stream) stream.getTracks().forEach(t=>t.stop());
-  stream = null; video.srcObject = null;
-  document.getElementById('cam-idle').style.display = 'flex';
-  document.getElementById('btn-stop').style.display = 'none';
-  document.getElementById('scan-bar').style.display = 'none';
+  scanning=false; if(rafId)cancelAnimationFrame(rafId);
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=null; video.srcObject=null;
+  document.getElementById('cam-idle').style.display='flex';
+  document.getElementById('btn-stop').style.display='none';
+  document.getElementById('scan-bar').style.display='none';
   document.getElementById('cam-dot').classList.remove('on');
-  document.getElementById('cam-status').textContent = 'Kamera Kapalı';
+  document.getElementById('cam-status').textContent='Kamera Kapalı';
 }
 
 function scanLoop() {
-  if (!scanning) return;
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  if(!scanning)return;
+  if(video.readyState===video.HAVE_ENOUGH_DATA){
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
     ctx.drawImage(video,0,0);
-    const img = ctx.getImageData(0,0,canvas.width,canvas.height);
-    const code = jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'});
-    if (code) { scanning=false; stopCamera(); processQR(code.data); return; }
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+    if(code){scanning=false;stopCamera();processQR(code.data);return;}
   }
-  rafId = requestAnimationFrame(scanLoop);
+  rafId=requestAnimationFrame(scanLoop);
 }
 
-// ── IMAGE UPLOAD ──────────────────────────────────────
-const dropArea = document.getElementById('drop-area');
-dropArea.addEventListener('dragover', e=>{e.preventDefault();dropArea.classList.add('dragging')});
-dropArea.addEventListener('dragleave', ()=>dropArea.classList.remove('dragging'));
-dropArea.addEventListener('drop', e=>{
-  e.preventDefault(); dropArea.classList.remove('dragging');
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('image/')) readImageFile(f);
+/* ── RESİM YÜKLEME ─────────────────────────────────── */
+const dropArea=document.getElementById('drop-area');
+dropArea.addEventListener('dragover',e=>{e.preventDefault();dropArea.classList.add('dragging')});
+dropArea.addEventListener('dragleave',()=>dropArea.classList.remove('dragging'));
+dropArea.addEventListener('drop',e=>{
+  e.preventDefault();dropArea.classList.remove('dragging');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))readImageFile(f);
   else showToast('Lütfen bir resim dosyası sürükleyin.');
 });
-
-function handleFile(e) { const f=e.target.files[0]; if(f) readImageFile(f); }
+function handleFile(e){const f=e.target.files[0];if(f)readImageFile(f);}
 
 function readImageFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const img = document.getElementById('img-preview');
-    img.src = e.target.result;
-    document.getElementById('img-preview-wrap').style.display = 'block';
-    document.getElementById('drop-area').style.display = 'none';
-    document.getElementById('btn-clear-img').style.display = 'block';
-    document.getElementById('scan-spinner-wrap').style.display = 'flex';
-    img.onload = function() {
-      // Draw to offscreen canvas and scan
-      const oc = document.createElement('canvas');
-      oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-      const ox = oc.getContext('2d');
-      ox.drawImage(img,0,0);
-      const id = ox.getImageData(0,0,oc.width,oc.height);
-      const code = jsQR(id.data, id.width, id.height, {inversionAttempts:'attemptBoth'});
-      document.getElementById('scan-spinner-wrap').style.display = 'none';
-      if (code) { processQR(code.data); }
-      else {
-        showToast('QR kod bulunamadı. Daha net veya yakın bir resim deneyin.');
-      }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=document.getElementById('img-preview');
+    img.src=e.target.result;
+    document.getElementById('img-preview-wrap').style.display='block';
+    document.getElementById('drop-area').style.display='none';
+    document.getElementById('btn-clear-img').style.display='block';
+    document.getElementById('scan-spinner-wrap').style.display='flex';
+    img.onload=function(){
+      const oc=document.createElement('canvas');
+      oc.width=img.naturalWidth;oc.height=img.naturalHeight;
+      const ox=oc.getContext('2d');ox.drawImage(img,0,0);
+      const id=ox.getImageData(0,0,oc.width,oc.height);
+      const code=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+      document.getElementById('scan-spinner-wrap').style.display='none';
+      if(code)processQR(code.data);
+      else showToast('QR kod bulunamadı. Daha net/yakın bir resim deneyin.');
     };
   };
   reader.readAsDataURL(file);
 }
 
-function clearImage() {
+function clearImage(){
   document.getElementById('img-preview').src='';
   document.getElementById('img-preview-wrap').style.display='none';
   document.getElementById('drop-area').style.display='block';
@@ -680,64 +762,57 @@ function clearImage() {
   document.getElementById('result-section').style.display='none';
 }
 
-// ── MANUAL ────────────────────────────────────────────
-function validateManual() { _validateManual('manual-input'); }
-function validateManual2() { _validateManual('manual-input2'); }
-function _validateManual(id) {
-  let v = document.getElementById(id).value.trim();
-  if (!v) { showToast('Lütfen QR içeriğini girin.'); return; }
-  v = v.replace(/│/g, GS).replace(/\|/g, GS);
+/* ── MANUAL ────────────────────────────────────────── */
+function validateManual(id) {
+  let v=document.getElementById(id).value.trim();
+  if(!v){showToast('Lütfen QR içeriğini girin.');return;}
+  v=v.replace(/│/g,GS).replace(/\|/g,GS);
   processQR(v);
 }
 
 function processQR(data) {
-  document.getElementById('cam-status').textContent = 'Karekod Okundu ✓';
-  const r = validate(data);
-  showResult(r, data);
+  document.getElementById('cam-status').textContent='Karekod Okundu ✓';
+  showResult(validate(data), data);
 }
 
-// ── TABS ──────────────────────────────────────────────
-function switchMode(m) {
-  document.getElementById('panel-cam').style.display = m==='cam' ? 'block' : 'none';
-  document.getElementById('panel-img').style.display = m==='img' ? 'block' : 'none';
-  document.getElementById('tab-cam').className = 'mode-tab' + (m==='cam' ? ' active' : '');
-  document.getElementById('tab-img').className = 'mode-tab' + (m==='img' ? ' active' : '');
-  if (m==='cam') {} else stopCamera();
+/* ── SEKME / YARDIMCI ──────────────────────────────── */
+function switchMode(m){
+  document.getElementById('panel-cam').style.display=m==='cam'?'block':'none';
+  document.getElementById('panel-img').style.display=m==='img'?'block':'none';
+  document.getElementById('tab-cam').className='mode-tab'+(m==='cam'?' active':'');
+  document.getElementById('tab-img').className='mode-tab'+(m==='img'?' active':'');
+  if(m!=='cam')stopCamera();
 }
-
-function switchWarnTab(id) {
+function switchWarnTab(id,ev){
   document.querySelectorAll('.warn-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.warn-panel').forEach(p=>p.classList.remove('active'));
-  event.target.classList.add('active');
+  ev.target.classList.add('active');
   document.getElementById('wpanel-'+id).classList.add('active');
 }
-
-// ── HTTPS CHECK ───────────────────────────────────────
-function checkHTTPS() {
-  if (!isSecureContext) {
-    document.getElementById('https-warn').style.display = 'block';
-  }
-}
-
-function rescan() {
+function rescan(){
   document.getElementById('result-section').style.display='none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-// ── TOAST ─────────────────────────────────────────────
-function showToast(msg) {
+function showToast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
+  t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-// ── INIT ──────────────────────────────────────────────
-window.addEventListener('load', ()=>{
-  checkHTTPS();
-  // Ctrl+V paste support for desktop testing
-  document.addEventListener('paste', e=>{
-    const text = e.clipboardData.getData('text');
-    if (text && text.startsWith('E1')) { processQR(text); }
+/* ── INIT ──────────────────────────────────────────── */
+window.addEventListener('load',()=>{
+  // Kayıtlı tema
+  const saved=localStorage.getItem('ebis-theme');
+  if(saved){
+    const btn=document.querySelector(`.theme-btn[data-t="${saved}"]`);
+    if(btn)setTheme(saved,btn);
+  }
+  // HTTPS kontrolü
+  if(!isSecureContext) document.getElementById('https-warn').style.display='block';
+  // Yapıştırma kısayolu
+  document.addEventListener('paste',e=>{
+    const text=e.clipboardData.getData('text');
+    if(text&&text.startsWith('E1'))processQR(text);
   });
 });
 </script>
