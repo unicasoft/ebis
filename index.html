@@ -18,7 +18,10 @@
   const m={name:"Karekod Doğrulayıcı",short_name:"Karekod",display:"standalone",
     orientation:"portrait",background_color:"#0a1628",theme_color:"#0a1628",
     start_url:"./",
-    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%230055cc'/%3E%3Crect x='40' y='40' width='432' height='432' rx='65' fill='%230099dd'/%3E%3Ctext x='256' y='310' font-family='Arial Black' font-size='160' font-weight='900' fill='white' text-anchor='middle'%3EQR%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+    icons:[
+      {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230055cc'/%3E%3Crect x='15' y='15' width='162' height='162' rx='26' fill='%230099dd'/%3E%3Ctext x='96' y='118' font-family='Arial Black' font-size='62' font-weight='900' fill='white' text-anchor='middle'%3EQR%3C/text%3E%3C/svg%3E",sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"},
+      {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%230055cc'/%3E%3Crect x='40' y='40' width='432' height='432' rx='65' fill='%230099dd'/%3E%3Ctext x='256' y='310' font-family='Arial Black' font-size='160' font-weight='900' fill='white' text-anchor='middle'%3EQR%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}
+    ]};
   const l=document.createElement('link');l.rel='manifest';
   l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
   document.head.appendChild(l);
@@ -285,7 +288,7 @@ canvas#qr-canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge Format Kontrolü</p>
   </div>
-  <span class="hbadge">v5</span>
+  <span class="hbadge">v6</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -419,7 +422,7 @@ canvas#qr-canvas{display:none}
 
 <footer>
   Created by <strong>Unicasoft</strong> 2026 &nbsp;·&nbsp;
-  <a href="mailto:unicasoft@hotmail.com">unicasoft@hotmail.com</a>
+  <a href="/cdn-cgi/l/email-protection#24514a4d4745574b4250644c4b5049454d480a474b49"><span class="__cf_email__" data-cfemail="f1849f989290829e9785b1999e859c90989ddf929e9c">[email&#160;protected]</span></a>
 </footer>
 
 <!-- iOS Modal -->
@@ -436,7 +439,7 @@ canvas#qr-canvas{display:none}
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const GS=String.fromCharCode(29);
 
 // ── LOGOLAR (base64) ──
@@ -862,11 +865,13 @@ window.addEventListener('load',()=>{
   if(ios&&!sa)document.getElementById('btn-install').style.display='flex';
   if(!isSecureContext)document.getElementById('https-warn').style.display='block';
   const sv=localStorage.getItem('karekod-theme');
-  if(sv){const b=document.querySelector(`.tbtn[data-t="${sv}"]`);if(b)setTheme(sv,b);}
-  document.addEventListener('paste',e=>{
-    const t=e.clipboardData.getData('text');
-    if(t&&(t.trim().startsWith('{'))||t.startsWith('E1'))procQR(t);
-  });
+  `.tbtn[data-t="${sv}"]`);if(b){setTheme(sv,b);}}
+  // Service Worker kayit
+  if('serviceWorker' in navigator && isSecureContext){
+    navigator.serviceWorker.register('./sw.js')
+      .then(r=>console.log('SW kayitli:',r.scope))
+      .catch(e=>console.warn('SW hatasi:',e));
+  }
 });
 </script>
 </body>
