@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="koyu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" id="theme-color-meta" content="#0a1628">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBİS QR">
+<title>EBİS Karekod Doğrulayıcı</title>
+
+<!-- ══ FAVİCON — inline SVG ══ -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230055cc'/%3E%3Crect x='5' y='5' width='54' height='54' rx='8' fill='%230099dd'/%3E%3Crect x='10' y='10' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='13' y='13' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='16' y='16' width='8' height='8' fill='white'/%3E%3Crect x='34' y='10' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='37' y='13' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='40' y='16' width='8' height='8' fill='white'/%3E%3Crect x='10' y='34' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='13' y='37' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='16' y='40' width='8' height='8' fill='white'/%3E%3Crect x='34' y='34' width='8' height='8' fill='white' rx='1'/%3E%3Crect x='34' y='46' width='8' height='8' fill='white' rx='1'/%3E%3Crect x='46' y='34' width='8' height='8' fill='white' rx='1'/%3E%3Crect x='46' y='46' width='8' height='8' fill='white' rx='1'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230055cc'/%3E%3Crect x='14' y='14' width='152' height='152' rx='28' fill='%230099dd'/%3E%3Crect x='26' y='26' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='34' y='34' width='40' height='40' rx='5' fill='%230055cc'/%3E%3Crect x='43' y='43' width='22' height='22' fill='white'/%3E%3Crect x='98' y='26' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='106' y='34' width='40' height='40' rx='5' fill='%230055cc'/%3E%3Crect x='115' y='43' width='22' height='22' fill='white'/%3E%3Crect x='26' y='98' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='34' y='106' width='40' height='40' rx='5' fill='%230055cc'/%3E%3Crect x='43' y='115' width='22' height='22' fill='white'/%3E%3Crect x='100' y='100' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='130' y='100' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='100' y='130' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='130' y='130' width='22' height='22' rx='3' fill='white'/%3E%3C/svg%3E">
+
+<!-- ══ PWA MANİFEST — inline blob ══ -->
+<script>
+(function(){
+  const icons=[{
+    src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%230055cc'/%3E%3Crect x='40' y='40' width='432' height='432' rx='65' fill='%230099dd'/%3E%3Crect x='70' y='70' width='160' height='160' rx='20' fill='white'/%3E%3Crect x='90' y='90' width='120' height='120' rx='12' fill='%230055cc'/%3E%3Crect x='112' y='112' width='76' height='76' fill='white'/%3E%3Crect x='282' y='70' width='160' height='160' rx='20' fill='white'/%3E%3Crect x='302' y='90' width='120' height='120' rx='12' fill='%230055cc'/%3E%3Crect x='324' y='112' width='76' height='76' fill='white'/%3E%3Crect x='70' y='282' width='160' height='160' rx='20' fill='white'/%3E%3Crect x='90' y='302' width='120' height='120' rx='12' fill='%230055cc'/%3E%3Crect x='112' y='324' width='76' height='76' fill='white'/%3E%3Crect x='286' y='286' width='64' height='64' rx='8' fill='white'/%3E%3Crect x='378' y='286' width='64' height='64' rx='8' fill='white'/%3E%3Crect x='286' y='378' width='64' height='64' rx='8' fill='white'/%3E%3Crect x='378' y='378' width='64' height='64' rx='8' fill='white'/%3E%3C/svg%3E",
+    sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"
+  }];
+  const m={name:"EBİS Karekod Doğrulayıcı",short_name:"EBİS QR",
+    description:"Elektronik Beton İzleme Sistemi - Karekod Doğrulayıcı",
+    start_url:"./",display:"standalone",orientation:"portrait",
+    background_color:"#0a1628",theme_color:"#0a1628",icons};
+  const link=document.createElement('link');
+  link.rel='manifest';
+  link.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
+  document.head.appendChild(link);
+})();
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<style>
+/* ════════════════════════════════════════
+   TEMALAR — sadece 3 adet, yüksek kontrast
+   ════════════════════════════════════════ */
+
+/* ── KOYU ── */
+[data-theme="koyu"] {
+  --bg:        #0a1628;
+  --s1:        #0f1f38;
+  --s2:        #162844;
+  --s3:        #1d3356;
+  --border:    #253f60;
+  --accent:    #3b9eff;
+  --accent2:   #1060c8;
+  --ok:        #22dd88;
+  --warn:      #ffb830;
+  --err:       #ff4560;
+  --text:      #dde8f8;       /* ana metin — çok açık */
+  --label:     #a8c4e0;       /* alan başlıkları — okunabilir gri-mavi */
+  --dim:       #607a99;       /* yardımcı metin */
+  --bright:    #f0f6ff;       /* başlıklar */
+  --val:       #ffffff;       /* değer metni */
+  --card-bg:   #0f1f38;
+  --inp-bg:    #080f1e;
+  --shadow:    0 2px 12px rgba(0,0,0,.5);
+  --tc:        #0a1628;
+}
+
+/* ── AÇIK ── */
+[data-theme="acik"] {
+  --bg:        #edf1f7;
+  --s1:        #ffffff;
+  --s2:        #e4ebf4;
+  --s3:        #d6e0ee;
+  --border:    #b8c8dc;
+  --accent:    #1565c0;
+  --accent2:   #0d47a1;
+  --ok:        #1b7a4a;
+  --warn:      #b45000;
+  --err:       #c0001a;
+  --text:      #1a2840;       /* ana metin — koyu lacivert */
+  --label:     #2e4a6a;       /* alan başlıkları — koyu mavi */
+  --dim:       #557090;       /* yardımcı */
+  --bright:    #0d1f35;       /* başlıklar */
+  --val:       #0a1628;       /* değer */
+  --card-bg:   #ffffff;
+  --inp-bg:    #f4f8fc;
+  --shadow:    0 2px 10px rgba(0,0,0,.08);
+  --tc:        #edf1f7;
+}
+
+/* ── TURUNCU ── */
+[data-theme="turuncu"] {
+  --bg:        #1c1008;
+  --s1:        #271808;
+  --s2:        #33200a;
+  --s3:        #402a10;
+  --border:    #5a3c14;
+  --accent:    #ff8c20;
+  --accent2:   #c45e00;
+  --ok:        #44e888;
+  --warn:      #ffe066;
+  --err:       #ff5252;
+  --text:      #ffe8c8;       /* ana metin — sıcak krem */
+  --label:     #ffb870;       /* alan başlıkları — açık turuncu */
+  --dim:       #8a5c28;       /* yardımcı */
+  --bright:    #fff4e0;       /* başlıklar */
+  --val:       #ffffff;       /* değer */
+  --card-bg:   #271808;
+  --inp-bg:    #150c04;
+  --shadow:    0 2px 12px rgba(0,0,0,.5);
+  --tc:        #1c1008;
+}
+
+/* ════════════════════════════════════════
+   TEMEL
+   ════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s;font-size:15px;line-height:1.5}
+
+/* ── HEADER ── */
+header{
+  background:var(--s1);border-bottom:2px solid var(--border);
+  padding:11px 16px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:300;box-shadow:var(--shadow);
+  transition:background .25s,border-color .25s;
+}
+.logo{
+  width:42px;height:42px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(145deg,var(--accent2),var(--accent));
+  display:flex;align-items:center;justify-content:center;
+}
+/* SVG ikon logo içinde */
+.logo svg{width:26px;height:26px}
+.htext{flex:1;min-width:0}
+.htext h1{
+  font-family:'Inter Tight',sans-serif;font-weight:800;font-size:17px;
+  color:var(--bright);letter-spacing:-0.2px;line-height:1.1;
+  transition:color .25s;
+}
+.htext p{font-size:11px;color:var(--dim);font-weight:500;margin-top:1px;transition:color .25s}
+.hbadge{
+  background:rgba(59,158,255,.12);border:1.5px solid rgba(59,158,255,.3);
+  color:var(--accent);font-size:9px;font-weight:700;letter-spacing:1.2px;
+  padding:3px 7px;border-radius:4px;text-transform:uppercase;white-space:nowrap;
+  transition:color .25s,border-color .25s;flex-shrink:0;
+}
+#btn-install{
+  display:none;width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;
+  background:linear-gradient(145deg,var(--accent2),var(--accent));
+  font-size:17px;align-items:center;justify-content:center;flex-shrink:0;
+  animation:ipulse 2.5s ease-in-out infinite;
+}
+@keyframes ipulse{0%,100%{box-shadow:0 0 0 0 rgba(59,158,255,.5)}60%{box-shadow:0 0 0 9px rgba(59,158,255,0)}}
+
+/* ── TEMA ÇUBUĞU ── */
+#theme-bar{
+  background:var(--s2);border-bottom:1px solid var(--border);
+  padding:8px 14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  transition:background .25s,border-color .25s;
+}
+.tbar-lbl{
+  font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--dim);flex-shrink:0;margin-right:4px;
+}
+.tbtn{
+  display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+  border:2px solid transparent;background:var(--s3);cursor:pointer;
+  font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--label);transition:all .2s;white-space:nowrap;
+}
+.tbtn:hover{border-color:var(--accent);color:var(--bright)}
+.tbtn.active{border-color:var(--accent);background:rgba(59,158,255,.1);color:var(--accent)}
+.tswatch{width:13px;height:13px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.25)}
+
+/* ── HTTPS UYARI ── */
+#https-warn{
+  margin:12px 14px 0;padding:12px 14px;display:none;
+  background:rgba(255,184,48,.08);border:1.5px solid rgba(255,184,48,.35);border-radius:8px;
+}
+.hw-title{font-size:13px;font-weight:700;color:var(--warn);display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.hw-body{font-size:13px;color:var(--text);line-height:1.7}
+.hw-body code{background:rgba(0,0,0,.25);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--accent);display:inline-block;margin:2px 0}
+.wtabs{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap}
+.wtab{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--dim);transition:.15s}
+.wtab.on{background:rgba(59,158,255,.12);border-color:var(--accent);color:var(--accent)}
+.wpanel{display:none}.wpanel.on{display:block}
+
+/* ── MAIN ── */
+main{padding:14px;max-width:600px;margin:0 auto}
+
+/* ── MOD SEKMELERİ ── */
+.modtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.mtab{
+  background:var(--s1);border:2px solid var(--border);border-radius:10px;
+  padding:13px 8px;cursor:pointer;text-align:center;transition:.2s;
+}
+.mtab.on{border-color:var(--accent);background:rgba(59,158,255,.07)}
+.mtab-icon{font-size:26px;margin-bottom:5px;display:block}
+.mtab-lbl{
+  font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--dim);transition:color .2s;
+}
+.mtab.on .mtab-lbl{color:var(--accent)}
+
+/* ── KART ── */
+.card{
+  background:var(--s1);border:1.5px solid var(--border);border-radius:10px;
+  overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);
+  transition:background .25s,border-color .25s;
+}
+.card-head{
+  padding:10px 14px;display:flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--label);border-bottom:1.5px solid var(--border);
+  background:var(--s2);transition:all .25s;
+}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.pdot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── KAMERA ── */
+.vwrap{position:relative;background:#000;aspect-ratio:1;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+.corners{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.cbox{width:62%;aspect-ratio:1;position:relative}
+.cbox::before,.cbox::after,.cbox span::before,.cbox span::after{content:'';position:absolute;width:22px;height:22px;border-color:var(--accent);border-style:solid}
+.cbox::before{top:0;left:0;border-width:3px 0 0 3px}
+.cbox::after{top:0;right:0;border-width:3px 3px 0 0}
+.cbox span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.cbox span::after{bottom:0;right:0;border-width:0 3px 3px 0}
+.sbar{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scan 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent)}
+@keyframes scan{0%,100%{top:0}50%{top:100%}}
+.cidle{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.cidle-icon{font-size:52px;opacity:.3}
+.cidle-txt{font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+.btnp{
+  background:linear-gradient(145deg,var(--accent2),var(--accent));color:#fff;
+  border:none;border-radius:7px;cursor:pointer;transition:.15s;
+  font-size:15px;font-weight:700;letter-spacing:.5px;padding:13px 30px;
+}
+.btnp:active{transform:scale(.97)}
+.btn-stop{
+  display:none;width:100%;padding:11px;background:var(--s2);
+  border:none;border-radius:0;font-size:12px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--err);
+  cursor:pointer;border-top:1px solid var(--border);
+}
+
+/* ── UPLOAD ── */
+.dropz{
+  border:2px dashed var(--border);border-radius:8px;padding:36px 20px;
+  text-align:center;cursor:pointer;transition:.2s;background:var(--s2);
+  position:relative;overflow:hidden;
+}
+.dropz:hover,.dropz.drag{border-color:var(--accent);background:rgba(59,158,255,.05)}
+.drop-ico{font-size:42px;margin-bottom:10px;opacity:.45;display:block}
+.drop-ttl{font-family:'Inter Tight',sans-serif;font-size:18px;font-weight:800;color:var(--bright);margin-bottom:4px}
+.drop-sub{font-size:13px;color:var(--dim);line-height:1.5}
+.drop-sub span{color:var(--accent);text-decoration:underline;cursor:pointer}
+#flinput{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.prevwrap{display:none;position:relative}
+#imgprev{width:100%;border-radius:8px;display:block;max-height:360px;object-fit:contain;background:#000}
+.prev-ov{position:absolute;inset:0;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);pointer-events:none}
+.spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-clr{
+  width:100%;padding:10px;margin-top:8px;background:var(--s2);
+  border:1.5px solid var(--border);border-radius:7px;font-size:12px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--dim);cursor:pointer;transition:.15s;
+}
+.btn-clr:hover{color:var(--err);border-color:var(--err)}
+
+/* ── MANUAL GİRİŞ ── */
+.mwrap{padding:14px}
+.mlbl{font-size:13px;font-weight:600;color:var(--label);margin-bottom:7px;display:block}
+textarea.minp{
+  width:100%;background:var(--inp-bg);border:1.5px solid var(--border);border-radius:7px;
+  color:var(--text);font-family:monospace;font-size:13px;padding:10px 12px;
+  resize:vertical;min-height:80px;outline:none;transition:.15s;line-height:1.5;
+}
+textarea.minp:focus{border-color:var(--accent);background:var(--s2)}
+textarea.minp::placeholder{color:var(--dim)}
+.mhint{font-size:12px;color:var(--dim);margin-top:5px;font-style:italic}
+.btnv{
+  width:100%;margin-top:10px;padding:13px;
+  background:linear-gradient(145deg,var(--accent2),var(--accent));
+  border:none;border-radius:7px;cursor:pointer;
+  font-size:15px;font-weight:700;letter-spacing:.5px;color:#fff;
+}
+
+/* ════════════════════════════════════════
+   SONUÇ BÖLÜMÜ — okunurluk öncelikli
+   ════════════════════════════════════════ */
+#rsec{display:none}
+
+/* Sonuç başlık bandı */
+.rhead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px 10px 0 0;border:1.5px solid var(--border);border-bottom:none}
+.rhead.ok {background:rgba(34,221,136,.08);border-color:rgba(34,221,136,.4)}
+.rhead.fail{background:rgba(255,69,96,.08); border-color:rgba(255,69,96,.4)}
+.rico{font-size:30px;flex-shrink:0}
+.rtitle{font-family:'Inter Tight',sans-serif;font-size:20px;font-weight:800;line-height:1.2}
+.rhead.ok  .rtitle{color:var(--ok)}
+.rhead.fail .rtitle{color:var(--err)}
+.rsub{font-size:13px;color:var(--dim);margin-top:3px;font-weight:500}
+
+/* Hata listesi */
+.errwrap{background:var(--s1);border:1.5px solid rgba(255,69,96,.35);border-top:none;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.eitem{background:rgba(255,69,96,.08);border-left:3px solid var(--err);padding:10px 12px;border-radius:0 6px 6px 0}
+.efield{font-size:13px;font-weight:700;color:var(--err);text-transform:uppercase;letter-spacing:.4px}
+.emsg{font-size:14px;color:var(--text);margin-top:3px;line-height:1.4;font-weight:500}
+.ehint{font-size:12px;color:var(--dim);margin-top:4px;font-style:italic}
+
+/* Alan tablosu */
+.ftable{background:var(--s1);border:1.5px solid var(--border);border-radius:0 0 10px 10px;margin-bottom:12px;overflow:hidden;transition:background .25s}
+.fthd{
+  padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--label);
+  background:var(--s2);border-bottom:1.5px solid var(--border);
+}
+
+.frow{
+  display:grid;grid-template-columns:42% 1fr 24px;
+  padding:9px 16px;border-bottom:1px solid var(--border);
+  align-items:start;transition:background .1s;
+  gap:6px;
+}
+.frow:last-child{border-bottom:none}
+.frow:hover{background:rgba(59,158,255,.04)}
+.frow.ferr{background:rgba(255,69,96,.05)}
+.frow.ferr:hover{background:rgba(255,69,96,.09)}
+
+/* ★ ALAN ADI — yüksek kontrast, okunaklı ★ */
+.fname{
+  font-size:13px;
+  font-weight:600;
+  color:var(--label);      /* koyu: #a8c4e0 | açık: #2e4a6a | turuncu: #ffb870 */
+  line-height:1.4;
+  padding-top:1px;
+}
+
+/* ★ DEĞER — en açık renk, belirgin ★ */
+.fval{
+  font-size:14px;
+  font-weight:700;
+  color:var(--val);        /* neredeyse beyaz / siyah */
+  word-break:break-all;
+  line-height:1.4;
+}
+.fval.empty{
+  font-size:12px;font-weight:400;
+  color:var(--dim);font-style:italic;
+}
+.fstat{font-size:14px;text-align:right;padding-top:1px}
+
+/* Ham içerik */
+.rawcard{background:var(--s1);border:1.5px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;transition:background .25s}
+.rawhd{padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--label);background:var(--s2);border-bottom:1.5px solid var(--border)}
+.rawbody{padding:10px 14px;font-family:monospace;font-size:12px;color:var(--dim);word-break:break-all;line-height:1.7;max-height:90px;overflow-y:auto}
+.gs{color:var(--accent);font-weight:700}
+
+/* Yeniden tara */
+.btn-rs{
+  display:block;width:100%;padding:14px;margin-bottom:24px;
+  background:var(--s2);border:1.5px solid var(--border);border-radius:9px;
+  cursor:pointer;font-size:14px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--accent);transition:background .2s;
+}
+.btn-rs:hover{background:var(--s3)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--s3);border:1.5px solid var(--border);
+  color:var(--bright);padding:10px 20px;border-radius:24px;
+  font-size:13px;font-weight:600;z-index:999;opacity:0;
+  transition:opacity .3s;white-space:nowrap;pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+.toast.on{opacity:1}
+
+/* ── iOS MODAL ── */
+#ios-modal{display:none;position:fixed;inset:0;z-index:900}
+#ios-bd{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px)}
+#ios-sheet{
+  position:absolute;bottom:0;left:0;right:0;
+  background:var(--s1);border-top:2px solid var(--border);
+  border-radius:18px 18px 0 0;padding:22px 20px 38px;
+  animation:sup .3s ease;
+}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#ios-ttl{font-family:'Inter Tight',sans-serif;font-size:20px;font-weight:800;color:var(--bright);margin-bottom:18px;text-align:center}
+.ioss{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);font-size:15px;color:var(--text);font-weight:500;line-height:1.4}
+.ioss:last-child{border-bottom:none}
+.iosn{background:var(--accent);color:#fff;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+#ios-ok{width:100%;margin-top:18px;padding:14px;background:linear-gradient(145deg,var(--accent2),var(--accent));border:none;border-radius:9px;cursor:pointer;font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px}
+
+canvas#qr-canvas{display:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="logo">
+    <!-- QR simgesi SVG -->
+    <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="9" height="9" rx="2" fill="white"/>
+      <rect x="2.5" y="2.5" width="6" height="6" rx="1" fill="#1060c8"/>
+      <rect x="3.5" y="3.5" width="4" height="4" fill="white"/>
+      <rect x="16" y="1" width="9" height="9" rx="2" fill="white"/>
+      <rect x="17.5" y="2.5" width="6" height="6" rx="1" fill="#1060c8"/>
+      <rect x="18.5" y="3.5" width="4" height="4" fill="white"/>
+      <rect x="1" y="16" width="9" height="9" rx="2" fill="white"/>
+      <rect x="2.5" y="17.5" width="6" height="6" rx="1" fill="#1060c8"/>
+      <rect x="3.5" y="18.5" width="4" height="4" fill="white"/>
+      <rect x="16" y="16" width="4" height="4" rx=".8" fill="white"/>
+      <rect x="22" y="16" width="3" height="3" rx=".6" fill="white"/>
+      <rect x="16" y="22" width="3" height="3" rx=".6" fill="white"/>
+      <rect x="21" y="21" width="4" height="4" rx=".8" fill="white"/>
+    </svg>
+  </div>
+  <div class="htext">
+    <h1>EBİS Doğrulayıcı</h1>
+    <p>Elektronik Beton İzleme Sistemi</p>
+  </div>
+  <span class="hbadge">v4</span>
+  <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
+</header>
+
+<!-- ══ TEMA ÇUBUĞU ══ -->
+<div id="theme-bar">
+  <span class="tbar-lbl">Tema:</span>
+  <button class="tbtn active" data-t="koyu" onclick="setTheme('koyu',this)">
+    <span class="tswatch" style="background:linear-gradient(135deg,#1060c8,#3b9eff)"></span>Koyu
+  </button>
+  <button class="tbtn" data-t="acik" onclick="setTheme('acik',this)">
+    <span class="tswatch" style="background:linear-gradient(135deg,#0d47a1,#1565c0)"></span>Açık
+  </button>
+  <button class="tbtn" data-t="turuncu" onclick="setTheme('turuncu',this)">
+    <span class="tswatch" style="background:linear-gradient(135deg,#c45e00,#ff8c20)"></span>Turuncu
+  </button>
+</div>
+
+<!-- ══ HTTPS UYARI ══ -->
+<div id="https-warn">
+  <div class="hw-title">⚠ Kamera için HTTPS Gerekli</div>
+  <div class="hw-body">
+    Kamera sadece <strong>HTTPS</strong> veya <strong>localhost</strong>'ta çalışır.<br>
+    <strong>Resim yükleme ve metin girişi her zaman çalışır.</strong><br><br>
+    <div class="wtabs">
+      <div class="wtab on" onclick="wt('py',event)">Python</div>
+      <div class="wtab" onclick="wt('node',event)">Node.js</div>
+      <div class="wtab" onclick="wt('pages',event)">GitHub Pages</div>
+    </div>
+    <div class="wpanel on" id="wp-py">Dosya klasöründe: <code>python3 -m http.server 8080</code><br>Sonra: <code>http://localhost:8080/dosyaadi.html</code></div>
+    <div class="wpanel" id="wp-node"><code>npx serve .</code> → <code>http://localhost:3000/dosyaadi.html</code></div>
+    <div class="wpanel" id="wp-pages">Dosyayı <code>index.html</code> olarak GitHub'a yükle → Settings → Pages → main branch → Ücretsiz HTTPS.</div>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+  <!-- Mod sekmeleri -->
+  <div class="modtabs">
+    <div class="mtab on" id="t-cam" onclick="swMode('cam')">
+      <span class="mtab-icon">📷</span>
+      <span class="mtab-lbl">Kamera ile Tara</span>
+    </div>
+    <div class="mtab" id="t-img" onclick="swMode('img')">
+      <span class="mtab-icon">🖼️</span>
+      <span class="mtab-lbl">Resimden Oku</span>
+    </div>
+  </div>
+
+  <!-- KAMERA PANELİ -->
+  <div id="p-cam">
+    <div class="card">
+      <div class="card-head">
+        <div class="pdot" id="cdot"></div>
+        <span id="cstat">Kamera Bekleniyor</span>
+      </div>
+      <div class="vwrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="qr-canvas"></canvas>
+        <div class="corners"><div class="cbox"><span></span>
+          <div class="sbar" id="sbar" style="display:none"></div>
+        </div></div>
+        <div class="cidle" id="cidle">
+          <div class="cidle-icon">📷</div>
+          <div class="cidle-txt">Kamera Kapalı</div>
+          <button class="btnp" onclick="startCam()">Kamerayı Başlat</button>
+        </div>
+      </div>
+      <button class="btn-stop" id="bstop" onclick="stopCam()">■ Durdur</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">⌨ Ham Metin ile Test</div>
+      <div class="mwrap">
+        <label class="mlbl">QR içeriğini yapıştırın — │ veya | Grup Ayraç sayılır</label>
+        <textarea class="minp" id="mi1" placeholder="E1│A123456│0123456789│202309251330│12/60│C30│0,7│S3│N│0,4│22,4│0,41│06EBS01│CEM II/A-S 42,5 N│YAPICHEM AX4117│GRANÜLE CÜRUFU│-"></textarea>
+        <div class="mhint">Gerçek QR taranamıyorsa içeriği buraya yapıştırıp test edebilirsiniz.</div>
+        <button class="btnv" onclick="valMan('mi1')">Doğrula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESİM PANELİ -->
+  <div id="p-img" style="display:none">
+    <div class="card">
+      <div class="card-head">🖼 QR Kodu İçeren Resmi Yükle</div>
+      <div style="padding:14px">
+        <div class="dropz" id="dropz">
+          <input type="file" id="flinput" accept="image/*" onchange="onFile(event)">
+          <span class="drop-ico">📂</span>
+          <div class="drop-ttl">Sürükle &amp; Bırak</div>
+          <div class="drop-sub">veya <span>dosya seç</span> — PNG · JPG · WEBP</div>
+        </div>
+        <div class="prevwrap" id="prevwrap">
+          <img id="imgprev" alt="Önizleme">
+          <div class="prev-ov" id="spinov" style="display:none"><div class="spinner"></div></div>
+        </div>
+        <button class="btn-clr" id="bclr" onclick="clrImg()" style="display:none">✕ Resmi Temizle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">⌨ Ham Metin ile Test</div>
+      <div class="mwrap">
+        <label class="mlbl">QR İçeriğini Yapıştırın</label>
+        <textarea class="minp" id="mi2" placeholder="E1│A123456│0123456789│202309251330│..."></textarea>
+        <div class="mhint">│ karakteri Grup Ayraç (ASCII 29) yerine kabul edilir.</div>
+        <button class="btnv" onclick="valMan('mi2')">Doğrula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SONUÇ -->
+  <div id="rsec">
+    <div class="rhead" id="rhead">
+      <span class="rico" id="rico"></span>
+      <div>
+        <div class="rtitle" id="rtitle"></div>
+        <div class="rsub" id="rsub"></div>
+      </div>
+    </div>
+    <div class="errwrap" id="errwrap" style="display:none"></div>
+    <div class="ftable">
+      <div class="fthd">Alan Detayları</div>
+      <div id="flist"></div>
+    </div>
+    <div class="rawcard">
+      <div class="rawhd">Ham QR İçeriği</div>
+      <div class="rawbody" id="rawbody"></div>
+    </div>
+    <button class="btn-rs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
+  </div>
+
+</main>
+
+<!-- iOS Modal -->
+<div id="ios-modal">
+  <div id="ios-bd" onclick="document.getElementById('ios-modal').style.display='none'"></div>
+  <div id="ios-sheet">
+    <div id="ios-ttl">📲 Ana Ekrana Ekle</div>
+    <div class="ioss"><span class="iosn">1</span><span>Alttaki <strong>Paylaş ⎋</strong> butonuna dokun</span></div>
+    <div class="ioss"><span class="iosn">2</span><span><strong>"Ana Ekrana Ekle" ＋</strong> seçeneğine dokun</span></div>
+    <div class="ioss"><span class="iosn">3</span><span>Sağ üstten <strong>"Ekle"</strong>'ye dokun</span></div>
+    <button id="ios-ok" onclick="document.getElementById('ios-modal').style.display='none'">Tamam, Anladım</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ SCRIPT ══ -->
+<script>
+const GS=String.fromCharCode(29);
+
+const FIELDS=[
+  {k:'ebis',    n:'EBİS Tanımlayıcı',      r:true },
+  {k:'serial',  n:'İrsaliye Seri No',       r:true },
+  {k:'tax',     n:'Vergi No',               r:true },
+  {k:'dt',      n:'Sevk Tarihi / Saati',    r:true },
+  {k:'qty',     n:'Beton Miktarı (m³)',     r:true },
+  {k:'str',     n:'Dayanım Sınıfı',        r:true },
+  {k:'r728',    n:'7/28 Dayanım Oranı',    r:true },
+  {k:'slump',   n:'Kıvam Sınıfı',         r:true },
+  {k:'density', n:'Yoğunluk Sınıfı',      r:true },
+  {k:'cl',      n:'Klorür İçeriği',        r:true },
+  {k:'dmax',    n:'Dmax (mm)',              r:true },
+  {k:'wc',      n:'Su / Çimento Oranı',    r:true },
+  {k:'plate',   n:'Araç Plaka No',         r:true },
+  {k:'cement',  n:'Çimento Tipi',          r:false},
+  {k:'chem',    n:'Kimyasal Katkı',        r:false},
+  {k:'mineral', n:'Mineral Katkı',         r:false},
+  {k:'fibers',  n:'Lifler',               r:false},
+];
+
+/* ── VALİDASYON ── */
+function validate(raw){
+  const errs=[],ferr={},fv={};
+  if(!raw||!raw.startsWith('E1')){
+    errs.push({f:'EBİS Tanımlayıcı',m:'QR kod EBİS formatında değil.',h:'İçerik "E1" ile başlamalıdır.'});
+    return{ok:false,errs,fv,ferr};
+  }
+  const p=raw.split(GS);
+  const ks=['ebis','serial','tax','dt','qty','str','r728','slump','density','cl','dmax','wc','plate','cement','chem','mineral','fibers'];
+  ks.forEach((k,i)=>fv[k]=p[i]??'');
+  if(p.length!==17) errs.push({f:'Alan Sayısı',m:`17 alan bekleniyor, ${p.length} bulundu.`,h:'Toplam 16 Grup Ayraç (ASCII 29) kullanılmalıdır.'});
+
+  const add=(k,f,m,h)=>{ferr[k]=true;errs.push({f,k,m,h})};
+
+  // Seri no
+  if(!fv.serial.trim()) add('serial','İrsaliye Seri No','Seri numarası boş.','"AB12345678" — boşluksuz alfanümerik.');
+  else if(/\s/.test(fv.serial)) add('serial','İrsaliye Seri No',`"${fv.serial}" — boşluk var.`,'Boşluksuz yazılmalıdır. Örnek: "AB12345678"');
+
+  // Vergi no
+  if(!fv.tax.trim()) add('tax','Vergi No','Vergi numarası boş.','10 haneli sayısal. Örnek: "0123456789"');
+  else if(!/^\d{10}$/.test(fv.tax)) add('tax','Vergi No',`"${fv.tax}" — 10 haneli sayısal değil.`,`${fv.tax.length} karakter var; tam 10 rakam olmalı.`);
+
+  // Tarih
+  const d=fv.dt;
+  if(!d.trim()) add('dt','Sevk Tarihi/Saati','Tarih/saat boş.','YYYYAAGGSSDD — 12 karakter. Örnek: "202309251330"');
+  else if(!/^\d{12}$/.test(d)) add('dt','Sevk Tarihi/Saati',`"${d}" — format hatalı.`,`12 haneli sayısal bekleniyor, ${d.length} karakter var.`);
+  else{
+    const yr=+d.slice(0,4),mo=+d.slice(4,6),dy=+d.slice(6,8),hr=+d.slice(8,10),mn=+d.slice(10,12);
+    if(yr<2019||yr>2099)add('dt','Sevk Tarihi/Saati',`Yıl geçersiz: ${yr}`,'2019-2099 arasında olmalı.');
+    else if(mo<1||mo>12)add('dt','Sevk Tarihi/Saati',`Ay geçersiz: ${mo}`,'01-12 arasında olmalı.');
+    else if(dy<1||dy>31)add('dt','Sevk Tarihi/Saati',`Gün geçersiz: ${dy}`,'01-31 arasında olmalı.');
+    else if(hr>23)add('dt','Sevk Tarihi/Saati',`Saat geçersiz: ${hr}`,'00-23 (24 saat formatı).');
+    else if(mn>59)add('dt','Sevk Tarihi/Saati',`Dakika geçersiz: ${mn}`,'00-59 arasında olmalı.');
+  }
+
+  // Miktar
+  if(!fv.qty.trim()) add('qty','Beton Miktarı','Miktar boş.','Tam sayı/tam sayı. Örnek: "12/60"');
+  else if(!/^\d+\/\d+$/.test(fv.qty)) add('qty','Beton Miktarı',`"${fv.qty}" — format hatalı.`,'Tam sayı/toplam formatı. Ondalık yok. Örnek: "12/60"');
+
+  // Dayanım
+  if(!fv.str.trim()) add('str','Dayanım Sınıfı','Dayanım sınıfı boş.','C veya LC + sayı. Örnek: "C30", "LC20"');
+  else if(!/^(LC|C)\d{2,3}$/.test(fv.str)) add('str','Dayanım Sınıfı',`"${fv.str}" — hatalı.`,'C veya LC öneki + 2-3 rakam. Örnek: C25, C50, LC35. Max 5 karakter.');
+
+  // 7/28 oranı
+  if(!fv.r728.trim()) add('r728','7/28 Dayanım Oranı','7/28 oranı boş.','Virgüllü ondalık. Örnek: "0,7" veya "7/56-0,5"');
+  else if(!/^0,[0-9]+$/.test(fv.r728)&&!/^7\/\d+-\d+,\d+$/.test(fv.r728)) add('r728','7/28 Dayanım Oranı',`"${fv.r728}" — hatalı.`,'Ondalık ayracı VİRGÜL. Örnek: "0,7" veya "7/56-0,5"');
+
+  // Kıvam
+  if(!fv.slump.trim()) add('slump','Kıvam Sınıfı','Kıvam sınıfı boş.','S1, S2, S3, S4 veya S5.');
+  else if(!/^S[1-5]$/.test(fv.slump)) add('slump','Kıvam Sınıfı',`"${fv.slump}" — geçersiz.`,'Sadece S1–S5 kabul edilir.');
+
+  // Yoğunluk
+  if(!fv.density.trim()) add('density','Yoğunluk Sınıfı','Yoğunluk sınıfı boş.','N (Normal), H (Hafif) veya A (Ağır).');
+  else if(!['N','H','A'].includes(fv.density.toUpperCase())) add('density','Yoğunluk Sınıfı',`"${fv.density}" — geçersiz.`,'"N", "H" veya "A" olabilir.');
+
+  // Klorür
+  if(!fv.cl.trim()) add('cl','Klorür İçeriği','Klorür boş.','Virgüllü ondalık. Örnek: "0,4"');
+  else if(!/^\d+(,\d+)?$/.test(fv.cl)) add('cl','Klorür İçeriği',`"${fv.cl}" — format hatalı.`,'Ondalık ayracı VİRGÜL. Örnek: "0,2", "0,4", "1,0"');
+
+  // Dmax
+  if(!fv.dmax.trim()) add('dmax','Dmax (mm)','Dmax boş.','mm cinsinden. Örnek: "25" veya "22,4"');
+  else if(!/^\d+(,\d+)?$/.test(fv.dmax)) add('dmax','Dmax (mm)',`"${fv.dmax}" — format hatalı.`,'Ondalık ayracı VİRGÜL. Örnek: "22,4" veya "25"');
+
+  // Su/Çimento
+  if(!fv.wc.trim()) add('wc','Su/Çimento Oranı','Su/Ç oranı boş.','Virgüllü ondalık "0,XX". Örnek: "0,41"');
+  else if(!/^0,\d+$/.test(fv.wc)) add('wc','Su/Çimento Oranı',`"${fv.wc}" — hatalı.`,'"0," ile başlamalı, VİRGÜL. Örnek: "0,41"');
+
+  // Plaka
+  if(!fv.plate.trim()) add('plate','Araç Plaka No','Plaka boş.','Büyük harf boşluksuz max 10 karakter. Örnek: "06EBS01"');
+  else if(/\s/.test(fv.plate)) add('plate','Araç Plaka No',`"${fv.plate}" — boşluk var.`,'Boşluksuz büyük harflerle.');
+  else if(fv.plate.length>10) add('plate','Araç Plaka No',`${fv.plate.length} karakter — çok uzun.`,'Azami 10 karakter.');
+
+  // Opsiyonel max uzunluk
+  [{k:'cement',n:'Çimento Tipi'},{k:'chem',n:'Kimyasal Katkı'},{k:'mineral',n:'Mineral Katkı'},{k:'fibers',n:'Lifler'}]
+  .forEach(f=>{if(fv[f.k]&&fv[f.k].length>30)add(f.k,f.n,`${f.n}: ${fv[f.k].length} karakter — çok uzun.`,'Azami 30 karakter.');});
+
+  return{ok:errs.length===0,errs,fv,ferr};
+}
+
+/* ── SONUÇ GÖSTER ── */
+const DM={N:'N — Normal Ağırlıklı',H:'H — Hafif Beton',A:'A — Ağır Beton'};
+function showResult(res,raw){
+  const sec=document.getElementById('rsec');
+  sec.style.display='block';
+  setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),80);
+
+  const rh=document.getElementById('rhead');
+  rh.className='rhead '+(res.ok?'ok':'fail');
+  document.getElementById('rico').textContent=res.ok?'✅':'❌';
+  document.getElementById('rtitle').textContent=res.ok?'EBİS Formatına Uygun':'Format Hataları Tespit Edildi';
+  document.getElementById('rsub').textContent=res.ok
+    ?'Karekod tüm doğrulama kurallarını başarıyla geçti.'
+    :`${res.errs.length} sorun bulundu — aşağıda detaylar.`;
+
+  const ew=document.getElementById('errwrap');
+  if(res.errs.length){
+    ew.style.display='flex';
+    ew.innerHTML=res.errs.map(e=>`
+      <div class="eitem">
+        <div class="efield">⚠ ${e.f}</div>
+        <div class="emsg">${e.m}</div>
+        <div class="ehint">💡 ${e.h}</div>
+      </div>`).join('');
+  } else ew.style.display='none';
+
+  document.getElementById('flist').innerHTML=FIELDS.map(f=>{
+    const v=res.fv[f.k]??'';
+    const hasErr=res.ferr[f.k];
+    const empty=!v||v.trim()===''||v==='-';
+    let disp=empty?'(boş)':v;
+    if(f.k==='dt'&&/^\d{12}$/.test(v))disp=`${v.slice(6,8)}.${v.slice(4,6)}.${v.slice(0,4)}  ${v.slice(8,10)}:${v.slice(10,12)}`;
+    if(f.k==='density'&&v)disp=DM[v.toUpperCase()]||v;
+    return`<div class="frow${hasErr?' ferr':''}">
+      <div class="fname">${f.n}</div>
+      <div class="fval${empty?' empty':''}">${disp}</div>
+      <div class="fstat">${hasErr?'❌':empty?'<span style="color:var(--dim)">—</span>':'<span style="color:var(--ok)">✓</span>'}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('rawbody').innerHTML=
+    raw.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+       .replace(new RegExp(GS,'g'),'<span class="gs"> │ </span>');
+}
+
+/* ── KAMERA ── */
+let stream=null,scanning=false,raf=null;
+const vid=document.getElementById('video'),cnv=document.getElementById('qr-canvas'),cx=cnv.getContext('2d');
+
+async function startCam(){
+  if(!isSecureContext){document.getElementById('https-warn').style.display='block';showToast('HTTPS veya localhost gerekli!');return;}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    vid.srcObject=stream;await vid.play();
+    document.getElementById('cidle').style.display='none';
+    document.getElementById('bstop').style.display='block';
+    document.getElementById('sbar').style.display='block';
+    document.getElementById('cdot').classList.add('on');
+    document.getElementById('cstat').textContent='Karekod Taranıyor…';
+    scanning=true;scanLoop();
+  }catch(e){showToast('Kamera: '+(e.message||e));document.getElementById('https-warn').style.display='block';}
+}
+function stopCam(){
+  scanning=false;if(raf)cancelAnimationFrame(raf);
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=null;vid.srcObject=null;
+  document.getElementById('cidle').style.display='flex';
+  document.getElementById('bstop').style.display='none';
+  document.getElementById('sbar').style.display='none';
+  document.getElementById('cdot').classList.remove('on');
+  document.getElementById('cstat').textContent='Kamera Kapalı';
+}
+function scanLoop(){
+  if(!scanning)return;
+  if(vid.readyState===vid.HAVE_ENOUGH_DATA){
+    cnv.width=vid.videoWidth;cnv.height=vid.videoHeight;
+    cx.drawImage(vid,0,0);
+    const id=cx.getImageData(0,0,cnv.width,cnv.height);
+    const c=jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});
+    if(c){scanning=false;stopCam();procQR(c.data);return;}
+  }
+  raf=requestAnimationFrame(scanLoop);
+}
+
+/* ── RESİM ── */
+const dz=document.getElementById('dropz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))rdImg(f);else showToast('Lütfen resim dosyası sürükleyin.');});
+function onFile(e){const f=e.target.files[0];if(f)rdImg(f);}
+function rdImg(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const img=document.getElementById('imgprev');
+    img.src=e.target.result;
+    document.getElementById('prevwrap').style.display='block';
+    document.getElementById('dropz').style.display='none';
+    document.getElementById('bclr').style.display='block';
+    document.getElementById('spinov').style.display='flex';
+    img.onload=()=>{
+      const oc=document.createElement('canvas');
+      oc.width=img.naturalWidth;oc.height=img.naturalHeight;
+      const ox=oc.getContext('2d');ox.drawImage(img,0,0);
+      const id=ox.getImageData(0,0,oc.width,oc.height);
+      const c=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+      document.getElementById('spinov').style.display='none';
+      if(c)procQR(c.data);else showToast('QR kod bulunamadı. Daha net bir resim deneyin.');
+    };
+  };
+  r.readAsDataURL(file);
+}
+function clrImg(){
+  document.getElementById('imgprev').src='';
+  document.getElementById('prevwrap').style.display='none';
+  document.getElementById('dropz').style.display='block';
+  document.getElementById('bclr').style.display='none';
+  document.getElementById('flinput').value='';
+  document.getElementById('rsec').style.display='none';
+}
+
+/* ── MANUAL ── */
+function valMan(id){
+  let v=document.getElementById(id).value.trim();
+  if(!v){showToast('Lütfen QR içeriğini girin.');return;}
+  procQR(v.replace(/│/g,GS).replace(/\|/g,GS));
+}
+function procQR(data){
+  document.getElementById('cstat').textContent='Karekod Okundu ✓';
+  showResult(validate(data),data);
+}
+
+/* ── SEKME ── */
+function swMode(m){
+  document.getElementById('p-cam').style.display=m==='cam'?'block':'none';
+  document.getElementById('p-img').style.display=m==='img'?'block':'none';
+  document.getElementById('t-cam').className='mtab'+(m==='cam'?' on':'');
+  document.getElementById('t-img').className='mtab'+(m==='img'?' on':'');
+  if(m!=='cam')stopCam();
+}
+
+/* ── HTTPS WARN TABS ── */
+function wt(id,ev){
+  document.querySelectorAll('.wtab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.wpanel').forEach(p=>p.classList.remove('on'));
+  ev.target.classList.add('on');
+  document.getElementById('wp-'+id).classList.add('on');
+}
+
+/* ── TEMA ── */
+const TC={koyu:'#0a1628',acik:'#edf1f7',turuncu:'#1c1008'};
+function setTheme(n,btn){
+  document.documentElement.setAttribute('data-theme',n);
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  localStorage.setItem('ebis-theme',n);
+  const m=document.getElementById('theme-color-meta');
+  if(m)m.setAttribute('content',TC[n]||'#0a1628');
+}
+
+/* ── PWA KURULUM ── */
+let dp=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;document.getElementById('btn-install').style.display='flex';});
+window.addEventListener('appinstalled',()=>{dp=null;document.getElementById('btn-install').style.display='none';showToast('✅ Ana ekrana eklendi!');});
+function installApp(){
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const sa=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  if(sa){showToast('Uygulama zaten yüklü!');return;}
+  if(dp){dp.prompt();dp.userChoice.then(r=>{if(r.outcome==='accepted')showToast('✅ Ana ekrana eklendi!');dp=null;document.getElementById('btn-install').style.display='none';});}
+  else if(ios){document.getElementById('ios-modal').style.display='block';}
+  else showToast('Tarayıcı menüsünden "Ana Ekrana Ekle" seçin.');
+}
+
+/* ── YARDIMCI ── */
+function rescan(){document.getElementById('rsec').style.display='none';window.scrollTo({top:0,behavior:'smooth'});}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3500);}
+
+/* ── INIT ── */
+window.addEventListener('load',()=>{
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const sa=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  if(ios&&!sa)document.getElementById('btn-install').style.display='flex';
+  if(!isSecureContext)document.getElementById('https-warn').style.display='block';
+  const sv=localStorage.getItem('ebis-theme');
+  if(sv){const b=document.querySelector(`.tbtn[data-t="${sv}"]`);if(b)setTheme(sv,b);}
+  document.addEventListener('paste',e=>{const t=e.clipboardData.getData('text');if(t&&t.startsWith('E1'))procQR(t);});
+});
+</script>
+</body>
+</html>
