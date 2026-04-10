@@ -25,7 +25,7 @@
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <style>
 [data-theme="koyu"]{
   --bg:#0a1628;--s1:#0f1f38;--s2:#162844;--s3:#1d3356;--bd:#253f60;
@@ -210,13 +210,19 @@ textarea.minp::placeholder{color:var(--dm)}
 .ftable{background:var(--s1);border:1.5px solid var(--bd);border-top:none;
   border-radius:0 0 10px 10px;margin-bottom:12px;overflow:hidden}
 .fthd{padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--lb);background:var(--s2);border-bottom:1.5px solid var(--bd)}
+  text-transform:uppercase;color:var(--lb);background:var(--s2);border-bottom:1.5px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-between}
+.fsc{display:flex;gap:3px}
+.fsc button{background:var(--s3);border:1.5px solid var(--bd);color:var(--dm);
+  border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;
+  padding:2px 8px;font-size:11px;line-height:1.6;transition:.15s}
+.fsc button.on{border-color:var(--ac);color:var(--ac);background:rgba(59,158,255,.1)}
 .frow{display:grid;grid-template-columns:44% 1fr 22px;padding:8px 14px;
   border-bottom:1px solid var(--bd);align-items:start;gap:5px}
 .frow:last-child{border-bottom:none}
 .frow.ferr{background:rgba(255,69,96,.05)}
 .fname{font-size:13px;font-weight:600;color:var(--lb);line-height:1.4}
-.fval{font-size:14px;font-weight:700;color:var(--vl);word-break:break-all;line-height:1.4}
+.fval{font-size:var(--fval-sz,14px);font-weight:700;color:var(--vl);word-break:break-all;line-height:1.4}
 .fval.empty{font-size:12px;font-weight:400;color:var(--dm);font-style:italic}
 .fstat{font-size:13px;text-align:right}
 
@@ -295,7 +301,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge Format Kontrolü</p>
   </div>
-  <span class="hbadge">v5</span>
+  <span class="hbadge">v8</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -410,8 +416,14 @@ canvas{display:none}
       <div><div class="rtitle" id="rtitle"></div><div class="rsub" id="rsub"></div></div>
     </div>
     <div class="errwrap" id="errwrap" style="display:none"></div>
-    <div class="ftable">
-      <div class="fthd">Alan Detayları</div>
+    <div class="ftable" id="ftable">
+      <div class="fthd"><span>Alan Detayları</span>
+        <div class="fsc" id="fsc">
+          <button data-sz="sm" onclick="setFS(this)">A−</button>
+          <button data-sz="md" onclick="setFS(this)" class="on">A</button>
+          <button data-sz="lg" onclick="setFS(this)">A+</button>
+        </div>
+      </div>
       <div id="flist"></div>
     </div>
     <div class="rawcard">
@@ -486,7 +498,9 @@ var GIB_IRS_EXT=[
   {k:'sevktarihi', n:'Fiili Sevk Tarihi', r:false},
   {k:'sevkzamani', n:'Sevk Zamanı',       r:false},
   {k:'tasiyicivkn',n:'Taşıyıcı VKN',    r:false},
-  {k:'plaka',      n:'Araç Plaka',        r:false}
+  {k:'plaka',      n:'Araç Plaka',        r:false},
+  {k:'miktar',     n:'Miktar',            r:false},
+  {k:'malzeme',    n:'Malzeme',           r:false}
 ];
 var GIB_SMM_EXT=[
   {k:'parabirimi', n:'Para Birimi', r:false},
@@ -713,14 +727,16 @@ function showResult(res,rawData){
   document.getElementById('rawbody').innerHTML=rawhtml;
 }
 
-// ── KAMERA ──
-var stream=null,scanning=false,raf=null;
-var vid=null,cnv=null,cx=null;
+// ── KAMERA (ZXing motor) ──
+var zxingReader = null;
+var stream = null, scanning = false;
+var vid = null, cnv = null, cx = null;
 
 function initCam(){
-  vid=document.getElementById('video');
-  cnv=document.getElementById('qrc');
-  cx=cnv.getContext('2d');
+  vid = document.getElementById('video');
+  cnv = document.getElementById('qrc');
+  cx  = cnv.getContext('2d');
+  zxingReader = new ZXing.BrowserQRCodeReader();
 }
 
 function startCam(){
@@ -745,7 +761,13 @@ function startCam(){
     document.getElementById('cdot').classList.add('on');
     document.getElementById('cstat').textContent='Karekod Taranıyor…';
     scanning=true;
-    scanLoop();
+    zxingReader.decodeFromVideoElement(vid, function(result, err){
+      if(result && scanning){
+        scanning=false;
+        stopCam();
+        procQR(result.getText());
+      }
+    });
   })
   .catch(function(e){
     showToast('Kamera açılamadı: '+(e.message||e));
@@ -755,7 +777,7 @@ function startCam(){
 
 function stopCam(){
   scanning=false;
-  if(raf){cancelAnimationFrame(raf);raf=null;}
+  if(zxingReader){try{zxingReader.reset();}catch(e2){}}
   if(stream){stream.getTracks().forEach(function(t){t.stop();});}
   stream=null;
   if(vid){vid.srcObject=null;}
@@ -764,19 +786,6 @@ function stopCam(){
   document.getElementById('sbar').style.display='none';
   document.getElementById('cdot').classList.remove('on');
   document.getElementById('cstat').textContent='Kamera Kapalı';
-}
-
-function scanLoop(){
-  if(!scanning)return;
-  if(vid.readyState===vid.HAVE_ENOUGH_DATA){
-    cnv.width=vid.videoWidth;
-    cnv.height=vid.videoHeight;
-    cx.drawImage(vid,0,0);
-    var id=cx.getImageData(0,0,cnv.width,cnv.height);
-    var code=jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});
-    if(code){scanning=false;stopCam();procQR(code.data);return;}
-  }
-  raf=requestAnimationFrame(scanLoop);
 }
 
 // ── RESİM ──
@@ -803,14 +812,14 @@ function rdImg(file){
     document.getElementById('bclr').style.display='block';
     document.getElementById('spinov').style.display='flex';
     img.onload=function(){
-      var oc=document.createElement('canvas');
-      oc.width=img.naturalWidth;oc.height=img.naturalHeight;
-      var ox=oc.getContext('2d');ox.drawImage(img,0,0);
-      var id=ox.getImageData(0,0,oc.width,oc.height);
-      var code=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
-      document.getElementById('spinov').style.display='none';
-      if(code) procQR(code.data);
-      else showToast('QR kod bulunamadı. Daha net resim deneyin.');
+      if(!zxingReader) zxingReader=new ZXing.BrowserQRCodeReader();
+      zxingReader.decodeFromImageElement(img).then(function(result){
+        document.getElementById('spinov').style.display='none';
+        procQR(result.getText());
+      }).catch(function(){
+        document.getElementById('spinov').style.display='none';
+        showToast('QR kod bulunamadı. Daha net resim deneyin.');
+      });
     };
   };
   r.readAsDataURL(file);
@@ -859,6 +868,17 @@ function showToast(msg){
   setTimeout(function(){t.classList.remove('on');},3500);
 }
 function closeIos(){document.getElementById('iosmodal').style.display='none';}
+
+// ── FONT BOYUTU ──
+var FSIZE_MAP={sm:'11px',md:'14px',lg:'19px'};
+function setFS(btn){
+  var sz=btn.getAttribute('data-sz');
+  document.querySelectorAll('#fsc button').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  var ft=document.getElementById('ftable');
+  if(ft) ft.style.setProperty('--fval-sz',FSIZE_MAP[sz]);
+  localStorage.setItem('k-fsize',sz);
+}
 
 // ── TEMA ──
 var TC={koyu:'#0a1628',acik:'#edf1f7',bej:'#f5ede0'};
@@ -915,6 +935,8 @@ window.addEventListener('load',function(){
   if(!window.isSecureContext) document.getElementById('hwarn').style.display='block';
   var sv=localStorage.getItem('k-theme');
   if(sv){var b=document.querySelector('.tbtn[data-t="'+sv+'"]');if(b)setTheme(sv,b);}
+  var fsv=localStorage.getItem('k-fsize');
+  if(fsv){var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');if(fb)setFS(fb);}
   document.addEventListener('paste',function(e){
     var t=e.clipboardData.getData('text');
     if(t&&(t.trim().charAt(0)==='{' || t.indexOf('E1')===0)) procQR(t);
