@@ -1,6 +1,6 @@
-# Karekod Doğrulayıcı v7
+# Karekod Doğrulayıcı v11
 
-EBİS ve GİB e-belge QR kodlarını kamera, resim veya manuel metin ile doğrulayan **PWA** uygulaması.
+EBİS ve GİB e-belge **QR kodlarını** + **barkodları** kamera, resim veya manuel metin ile doğrulayan **PWA** uygulaması.
 
 ---
 
@@ -8,102 +8,81 @@ EBİS ve GİB e-belge QR kodlarını kamera, resim veya manuel metin ile doğrul
 
 | Özellik | Açıklama |
 |---|---|
-| 📷 Kamera tarama | jsQR ile gerçek zamanlı QR okuma |
-| 🖼 Resimden okuma | PNG / JPG / WEBP drag-drop veya dosya seç |
+| 📷 Kamera tarama | Otomatik başlar — QR + barkod, çok motorlu |
+| 🖼 Resimden okuma | PNG / JPG / WEBP drag-drop, dosya seç veya Ctrl+V yapıştır |
 | ⌨️ Manuel test | QR içeriğini yapıştırarak doğrula |
 | ✅ EBİS doğrulama | 17 alan, format ve mantık kontrolü |
-| ✅ GİB doğrulama | e-Fatura, e-İrsaliye, e-SMM, e-MM, e-Sigorta, e-Arşiv |
+| ✅ GİB doğrulama | e-Fatura, e-İrsaliye (+miktar/malzeme), e-SMM, e-MM, e-Sigorta, e-Arşiv |
+| 📊 Barkod | EAN-8, EAN-13, Code128, Code39, QR, DataMatrix, PDF417 |
 | 📲 PWA kurulum | Android "Ana Ekrana Ekle", iOS Safari manuel adımlar |
 | 🔔 Bildirimler | Tarama sonucu push bildirimi (standalone mod) |
 | ⬆️ Otomatik güncelleme | Yeni sürüm hazır banner → tek tıkla güncelle |
 | 🌙 3 tema | Koyu / Açık / Bej-Kahve |
 | ✈️ Çevrimdışı | Service Worker cache — internet olmadan çalışır |
+| 🔠 Font boyutu | A− / A / A+ seçeneği, LocalStorage'a kaydedilir |
 
 ---
 
 ## Kurulum & Çalıştırma
 
-**Tek dosya** — sadece `index.html` + `sw.js` aynı klasörde olmalı.
+**3 dosya** — `index.html` + `sw.js` + `zbar-wasm.js` aynı klasörde olmalı.
 
 ```
 karekod/
 ├── index.html
 ├── sw.js
+├── zbar-wasm.js
 └── README.md
 ```
 
-### Yerel sunucu (HTTPS değil — kamera çalışmaz, diğerleri çalışır)
+### Yerel sunucu (HTTPS değil — kamera çalışmaz)
 ```bash
 python3 -m http.server 8080
-# → http://localhost:8080
+# → http://localhost:8080   (localhost'ta kamera da çalışır)
 ```
 
-### HTTPS ile tam özellik (kamera dahil)
+### HTTPS ile tam özellik
 ```bash
-# Node.js
 npx serve .
 # → http://localhost:3000
 ```
 
 ### Ücretsiz HTTPS hosting
-- **GitHub Pages**: `index.html` yükle → Settings → Pages → aktif et
+- **GitHub Pages**: `index.html`, `sw.js`, `zbar-wasm.js` → Settings → Pages
 - **Netlify / Vercel**: klasörü sürükle-bırak, otomatik HTTPS
 
-> ⚠️ Kamera **yalnızca** `https://` veya `localhost` üzerinde çalışır. Bu Web API kısıtlamasıdır.
+> ⚠️ Kamera **yalnızca** `https://` veya `localhost` üzerinde çalışır.
 
 ---
 
-## PWA Kurulumu
+## Kamera Motoru — Takılma Önlemi
 
-### Android (Chrome)
-Adres çubuğunda **⊕ Ana ekrana ekle** ikonu çıkar.  
-Veya headerda **📲** butonuna bas.
+Her tarama döngüsünde **4 motor** paralel çalışır:
 
-### iOS (Safari)
-1. Safari'de aç
-2. **Paylaş** butonu → **Ana Ekrana Ekle**
+| Motor | Sıklık | Ne okur |
+|---|---|---|
+| **jsQR** | Her kare (senkron) | QR kod |
+| **jsQR kontrast boost** | 30'da bir | Zor / bulanık QR |
+| **ZXing MultiFormatReader** | 5'te bir (async) | QR + tüm barkodlar |
+| **zbar-wasm** (libzbar) | 8'de bir (async) | QR + barkod, en güçlü |
 
-PWA olarak kurulunca:
-- Tam ekran çalışır (adres çubuğu yok)
-- Çevrimdışı çalışır (cache)
-- Tarama bildirimleri aktif olur
+**Takılma önlemi:** Her 200 karede bir ZXing reader otomatik sıfırlanır.  
+**Yeni tarama:** Sonuç ekranından "↺ Yeni Tarama" basınca kamera otomatik yeniden başlar.
 
 ---
 
-## Bildirimler
+## Resim / Ekran Görüntüsü Okuma (Monitörden)
 
-İlk açılışta **🔔 butonu** görünür. İzin verilirse:
+Monitörde açık PDF/ekrandan kamera ile okumak yerine:
 
-- **Standalone mod** (ana ekrandan açıldığında): tarama tamamlanınca bildirim gelir
-- **Push bildirim** (sunucu tarafı): `registration.pushManager.subscribe()` ile VAPID entegrasyonu yapılabilir
+1. `Win + Shift + S` (veya Print Screen) ile QR'ı ekran görüntüsüne al
+2. Uygulamada **Ctrl+V** bas → otomatik resim paneline geçer ve okur
 
-```js
-// Sunucu tarafından push göndermek için örnek payload:
-{
-  "title": "Karekod",
-  "body": "İrsaliye doğrulandı ✓",
-  "tag": "scan-result",
-  "url": "./"
-}
+Bu yöntem çok daha güvenilirdir. Motor sırası:
+
 ```
-
----
-
-## Otomatik Güncelleme
-
-Service Worker her **5 dakikada** bir güncelleme kontrolü yapar.  
-Yeni `sw.js` / `index.html` deploy edildiğinde:
-
-1. Arka planda yeni SW yüklenir
-2. Sarı **"Yeni sürüm hazır!"** banner belirir
-3. **Güncelle & Yenile** butonuna basınca `SKIP_WAITING` tetiklenir, sayfa yenilenir
-
-### Versiyon yükseltme adımları
-```js
-// sw.js içinde sadece VER sabitini değiştir:
-const VER = 'karekod-v8';   // ← arttır
+zbar-wasm → jsQR → ZXing MultiFormat → jsQR kontrast ×4 → ZXing preprocessed
 ```
-Deploy edince SW otomatik değişikliği algılar.
 
 ---
 
@@ -117,20 +96,39 @@ E1[GS]<seri>[GS]<vergiNo>[GS]<YYYYAAGGSSDk>[GS]<miktar/toplam>
 ```
 - 16 adet ASCII 29 (GS) ayracı = 17 alan
 - Tarih: `YYYYAAGGSSDDK` — 12 karakter
-- Metin giriş kutusuna `│` veya `|` karakteri GS sayılır
 
-## GİB Karekod Formatı
+## GİB Karekod Formatı (e-İrsaliye örneği)
 
 ```json
 {
-  "vkntckn":  "1234567890",
-  "avkntckn": "9876543210",
-  "senaryo":  "TEMELFATURA",
-  "tarih":    "2024-01-15",
-  "no":       "ABC202400000001",
-  "ettn":     "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  "vkntckn":   "4240545842",
+  "avkntckn":  "16439645514",
+  "senaryo":   "TEMELIRSALIYE",
+  "tip":       "SEVK",
+  "tarih":     "2026-04-09",
+  "no":        "DUB2026000002213",
+  "ettn":      "409d04ae-140a-45d3-949f-5d8f52dbdeec",
+  "sevktarihi":"2026-04-09",
+  "sevkzamani":"17:10:34",
+  "tasiyicivkn":"4240545842",
+  "plaka":     "41BDU275",
+  "miktar":    "5,5",
+  "malzeme":   "C30/37 TARIF EDILMIS BETON"
 }
 ```
+
+> `miktar` ve `malzeme` zorunlu GİB alanı dışında, sektör standardı olarak eklenmektedir.
+
+---
+
+## PWA Kurulumu
+
+### Android (Chrome)
+Adres çubuğunda **⊕ Ana ekrana ekle** ikonu çıkar veya headerda **📲** butonu.
+
+### iOS (Safari)
+1. Safari'de aç
+2. **Paylaş** → **Ana Ekrana Ekle**
 
 ---
 
@@ -138,20 +136,33 @@ E1[GS]<seri>[GS]<vergiNo>[GS]<YYYYAAGGSSDk>[GS]<miktar/toplam>
 
 | Kütüphane | Kaynak | Amaç |
 |---|---|---|
-| jsQR 1.4.0 | jsDelivr CDN | QR kod çözme |
+| jsQR 1.4.0 | jsDelivr CDN | QR kod çözme (senkron) |
+| @zxing/library 0.20.0 | jsDelivr CDN | Çok formatlı barkod/QR |
+| @undecaf/zbar-wasm | Lokal (zbar-wasm.js) | libzbar WASM — en güçlü motor |
 | Inter / Inter Tight | Google Fonts | Tipografi |
 
-Harici bağımlılık yok — jQuery, React, framework kullanılmadı.
+Framework yok — saf JavaScript.
+
+---
+
+## Service Worker Güncelleme
+
+```js
+// sw.js içinde VER sabitini arttır:
+const VER = 'karekod-v12';
+```
+
+Deploy edince SW otomatik güncelleme algılar, sarı banner belirir.
 
 ---
 
 ## Teknik Notlar
 
-- **Service Worker stratejisi**: `index.html` → network-first, CDN → stale-while-revalidate, diğer → cache-first
-- **SW güncelleme akışı**: `updatefound` → `statechange:installed` → banner → `SKIP_WAITING` → `controllerchange` → `reload()`
-- `skipWaiting()` install anında çağrılır (yeni sekmelerde hemen aktif)
-- Manifest `Blob URL` ile dinamik olarak oluşturulur (tek dosya deploy)
-- iOS `standalone` tespiti: `window.navigator.standalone === true`
+- Manifest `Blob URL` ile dinamik oluşturulur (tek dizin deploy)
+- zbar-wasm WASM base64 gömülü → CDN gerektirmez
+- Kamera `facingMode: environment` (arka kamera)
+- ZXing MultiFormatReader her `startCam()`/`stopCam()` çağrısında sıfırlanır (bellek sızıntısı önlemi)
+- Kontrast preprocessing: luminance → `(L-128)×k+128`, tek kanaldan RGBA
 
 ---
 
