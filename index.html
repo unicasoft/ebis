@@ -26,6 +26,7 @@
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 [data-theme="koyu"]{
   --bg:#0a1628;--s1:#0f1f38;--s2:#162844;--s3:#1d3356;--bd:#253f60;
@@ -301,7 +302,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge Format Kontrolü</p>
   </div>
-  <span class="hbadge">v8</span>
+  <span class="hbadge">v9</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -382,7 +383,8 @@ canvas{display:none}
           <input type="file" id="flinput" accept="image/*" onchange="onFile(event)">
           <span class="di">📂</span>
           <div class="dt">Sürükle &amp; Bırak</div>
-          <div class="ds">veya <span>dosya seç</span> · PNG · JPG · WEBP</div>
+          <div class="ds">veya <span>dosya seç</span> · PNG · JPG · WEBP<br>
+            <span style="font-size:11px;color:var(--ac)">📋 Ctrl+V ile ekran görüntüsü yapıştırabilirsiniz</span></div>
         </div>
         <div class="prevwrap" id="prevwrap">
           <img id="imgprev" alt="Önizleme">
@@ -812,17 +814,62 @@ function rdImg(file){
     document.getElementById('bclr').style.display='block';
     document.getElementById('spinov').style.display='flex';
     img.onload=function(){
-      if(!zxingReader) zxingReader=new ZXing.BrowserQRCodeReader();
-      zxingReader.decodeFromImageElement(img).then(function(result){
+      decodeImgMulti(img,function(txt){
         document.getElementById('spinov').style.display='none';
-        procQR(result.getText());
-      }).catch(function(){
-        document.getElementById('spinov').style.display='none';
-        showToast('QR kod bulunamadı. Daha net resim deneyin.');
+        if(txt) procQR(txt);
+        else showToast('QR kod bulunamadı. Daha net / yakın resim deneyin.');
       });
     };
   };
   r.readAsDataURL(file);
+}
+
+// ── GÖRÜNTÜ ÖN İŞLEME ──
+function prepCanvas(src,contrast,invert){
+  var oc=document.createElement('canvas');
+  oc.width=src.naturalWidth||src.width;
+  oc.height=src.naturalHeight||src.height;
+  var ctx=oc.getContext('2d');
+  ctx.drawImage(src,0,0);
+  var id=ctx.getImageData(0,0,oc.width,oc.height);
+  var d=id.data;
+  for(var i=0;i<d.length;i+=4){
+    var g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    g=Math.min(255,Math.max(0,(g-128)*contrast+128));
+    if(invert) g=255-g;
+    d[i]=d[i+1]=d[i+2]=g; d[i+3]=255;
+  }
+  ctx.putImageData(id,0,0);
+  return {canvas:oc,ctx:ctx};
+}
+
+// ── ÇİFT MOTOR: ZXing + jsQR fallback + kontrast serileri ──
+function decodeImgMulti(img,cb){
+  if(!zxingReader) zxingReader=new ZXing.BrowserQRCodeReader();
+  zxingReader.decodeFromImageElement(img).then(function(r){
+    cb(r.getText());
+  }).catch(function(){
+    var attempts=[
+      {c:1.0,inv:false},{c:1.0,inv:true},
+      {c:2.0,inv:false},{c:2.0,inv:true},
+      {c:3.5,inv:false},{c:3.5,inv:true}
+    ];
+    for(var i=0;i<attempts.length;i++){
+      var p=prepCanvas(img,attempts[i].c,attempts[i].inv);
+      var id=p.ctx.getImageData(0,0,p.canvas.width,p.canvas.height);
+      var code=jsQR(id.data,p.canvas.width,p.canvas.height,{inversionAttempts:'dontInvert'});
+      if(code){cb(code.data);return;}
+    }
+    // Son: ZXing preprocessed
+    var px=prepCanvas(img,2.5,false);
+    var ti=new Image();
+    ti.onload=function(){
+      zxingReader.decodeFromImageElement(ti).then(function(r2){
+        cb(r2.getText());
+      }).catch(function(){cb(null);});
+    };
+    ti.src=px.canvas.toDataURL();
+  });
 }
 function clrImg(){
   document.getElementById('imgprev').src='';
@@ -938,6 +985,22 @@ window.addEventListener('load',function(){
   var fsv=localStorage.getItem('k-fsize');
   if(fsv){var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');if(fb)setFS(fb);}
   document.addEventListener('paste',function(e){
+    // Görüntü paste (ekran görüntüsü)
+    var items=e.clipboardData&&e.clipboardData.items;
+    if(items){
+      for(var i=0;i<items.length;i++){
+        if(items[i].type.indexOf('image')===0){
+          var blob=items[i].getAsFile();
+          if(blob){
+            // Resim paneline geç
+            swMode('img');
+            rdImg(blob);
+            return;
+          }
+        }
+      }
+    }
+    // Metin paste
     var t=e.clipboardData.getData('text');
     if(t&&(t.trim().charAt(0)==='{' || t.indexOf('E1')===0)) procQR(t);
   });
