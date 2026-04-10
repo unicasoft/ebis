@@ -301,9 +301,9 @@ canvas{display:none}
   </div>
   <div class="htxt">
     <h1>Karekod Doğrulayıcı</h1>
-    <p>EBİS · GİB e-Belge Format Kontrolü</p>
+    <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v9</span>
+  <span class="hbadge">v10</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -730,16 +730,22 @@ function showResult(res,rawData){
   document.getElementById('rawbody').innerHTML=rawhtml;
 }
 
-// ── KAMERA (ZXing motor) ──
-var zxingReader = null;
-var stream = null, scanning = false;
-var vid = null, cnv = null, cx = null;
+// ── KAMERA: Manuel RAF loop — jsQR(her kare) + ZXing Multi(5'te bir) + zbar(5'te bir) ──
+var stream=null, scanning=false, raf=null, frameCnt=0;
+var vid=null, cnv=null, cx=null, mfReader=null;
+
+function getMFReader(){
+  if(!mfReader){
+    try{ mfReader=new ZXing.BrowserMultiFormatReader(); }
+    catch(e){ try{ mfReader=new ZXing.BrowserQRCodeReader(); }catch(e2){} }
+  }
+  return mfReader;
+}
 
 function initCam(){
-  vid = document.getElementById('video');
-  cnv = document.getElementById('qrc');
-  cx  = cnv.getContext('2d');
-  zxingReader = new ZXing.BrowserQRCodeReader();
+  vid=document.getElementById('video');
+  cnv=document.getElementById('qrc');
+  cx=cnv.getContext('2d');
 }
 
 function startCam(){
@@ -755,22 +761,14 @@ function startCam(){
   }
   navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}})
   .then(function(s){
-    stream=s;
-    vid.srcObject=s;
-    vid.play();
+    stream=s; vid.srcObject=s; vid.play();
     document.getElementById('cidle').style.display='none';
     document.getElementById('bstop').style.display='block';
     document.getElementById('sbar').style.display='block';
     document.getElementById('cdot').classList.add('on');
-    document.getElementById('cstat').textContent='Karekod Taranıyor…';
-    scanning=true;
-    zxingReader.decodeFromVideoElement(vid, function(result, err){
-      if(result && scanning){
-        scanning=false;
-        stopCam();
-        procQR(result.getText());
-      }
-    });
+    document.getElementById('cstat').textContent='Karekod / Barkod Taranıyor…';
+    scanning=true; frameCnt=0;
+    scanLoop();
   })
   .catch(function(e){
     showToast('Kamera açılamadı: '+(e.message||e));
@@ -778,9 +776,56 @@ function startCam(){
   });
 }
 
+function camFound(txt){
+  if(!scanning||!txt) return;
+  scanning=false; stopCam(); procQR(txt);
+}
+
+function scanLoop(){
+  if(!scanning) return;
+  if(vid.readyState>=vid.HAVE_ENOUGH_DATA){
+    cnv.width=vid.videoWidth; cnv.height=vid.videoHeight;
+    cx.drawImage(vid,0,0);
+    var id=cx.getImageData(0,0,cnv.width,cnv.height);
+
+    // Motor 1: jsQR — her kare, senkron, hızlı
+    var c=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+    if(c&&c.data){camFound(c.data);return;}
+
+    // Motor 2: ZXing MultiFormat — barkod + QR, 4 karede bir
+    if(frameCnt%4===1){
+      var r=getMFReader();
+      if(r){
+        var url=cnv.toDataURL('image/jpeg',0.85);
+        var ti=new Image();
+        ti.onload=function(){
+          if(!scanning)return;
+          r.decodeFromImageElement(ti).then(function(res){
+            if(res) camFound(res.getText());
+          }).catch(function(){});
+        };
+        ti.src=url;
+      }
+    }
+
+    // Motor 3: zbar-wasm — 4 karede bir (offset)
+    if(frameCnt%4===3&&typeof zbarWasm!=='undefined'){
+      var zbId=cx.getImageData(0,0,cnv.width,cnv.height);
+      zbarWasm.scanImageData(zbId).then(function(res){
+        if(!scanning||!res||!res.length)return;
+        var txt='';
+        try{txt=new TextDecoder('utf-8').decode(new Uint8Array(res[0].data));}catch(e){}
+        if(txt) camFound(txt);
+      }).catch(function(){});
+    }
+  }
+  frameCnt++;
+  raf=requestAnimationFrame(scanLoop);
+}
+
 function stopCam(){
   scanning=false;
-  if(zxingReader){try{zxingReader.reset();}catch(e2){}}
+  if(raf){cancelAnimationFrame(raf);raf=null;}
   if(stream){stream.getTracks().forEach(function(t){t.stop();});}
   stream=null;
   if(vid){vid.srcObject=null;}
@@ -844,57 +889,67 @@ function prepCanvas(src,contrast,invert){
   return {canvas:oc,ctx:ctx};
 }
 
-// ── ÜÇ MOTOR: zbar-wasm (primary) → ZXing → jsQR + kontrast serileri ──
+// ── GÖRÜNTÜ: Resim/Paste için çok motorlu decode ──
 function decodeImgMulti(img,cb){
-  // 1. zbar-wasm (libzbar WASM — en güçlü motor)
-  try {
-    var oc=document.createElement('canvas');
-    oc.width=img.naturalWidth||img.width;
-    oc.height=img.naturalHeight||img.height;
-    var ctx=oc.getContext('2d');
-    ctx.drawImage(img,0,0);
-    var id=ctx.getImageData(0,0,oc.width,oc.height);
-    if(typeof zbarWasm!=='undefined'){
-      zbarWasm.scanImageData(id).then(function(res){
-        if(res&&res.length>0){
-          var txt=res[0].decode('utf-8');
-          if(!txt) txt=new TextDecoder().decode(res[0].data);
-          if(txt){cb(txt);return;}
-        }
-        decodeZXingthenJsQR(img,cb);
-      }).catch(function(){decodeZXingthenJsQR(img,cb);});
-      return;
-    }
-  } catch(e){}
-  decodeZXingthenJsQR(img,cb);
+  var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h){cb(null);return;}
+  var oc=document.createElement('canvas'); oc.width=w; oc.height=h;
+  var ctx=oc.getContext('2d'); ctx.drawImage(img,0,0);
+  var id=ctx.getImageData(0,0,w,h);
+
+  // Motor 1: zbar-wasm (libzbar — en güçlü, barkod da okur)
+  if(typeof zbarWasm!=='undefined'){
+    zbarWasm.scanImageData(id).then(function(res){
+      if(res&&res.length>0){
+        var txt='';
+        try{txt=new TextDecoder('utf-8').decode(new Uint8Array(res[0].data));}catch(e){}
+        if(txt){cb(txt);return;}
+      }
+      decodeImgFallback(img,id,cb);
+    }).catch(function(){ decodeImgFallback(img,id,cb); });
+    return;
+  }
+  decodeImgFallback(img,id,cb);
 }
 
-function decodeZXingthenJsQR(img,cb){
-  if(!zxingReader) zxingReader=new ZXing.BrowserQRCodeReader();
-  zxingReader.decodeFromImageElement(img).then(function(r){
-    cb(r.getText());
-  }).catch(function(){
-    var attempts=[
-      {c:1.0,inv:false},{c:1.0,inv:true},
-      {c:2.0,inv:false},{c:2.0,inv:true},
-      {c:3.5,inv:false},{c:3.5,inv:true}
-    ];
-    for(var i=0;i<attempts.length;i++){
-      var p=prepCanvas(img,attempts[i].c,attempts[i].inv);
-      var id=p.ctx.getImageData(0,0,p.canvas.width,p.canvas.height);
-      var code=jsQR(id.data,p.canvas.width,p.canvas.height,{inversionAttempts:'dontInvert'});
-      if(code){cb(code.data);return;}
-    }
-    // Son: ZXing preprocessed
+function decodeImgFallback(img,id,cb){
+  // Motor 2: jsQR orijinal
+  var c=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+  if(c&&c.data){cb(c.data);return;}
+
+  // Motor 3: ZXing MultiFormat (barkod da okur)
+  var r=getMFReader();
+  if(r){
+    r.decodeFromImageElement(img).then(function(res){
+      if(res&&res.getText()){cb(res.getText());}
+      else decodeImgContrast(img,cb);
+    }).catch(function(){ decodeImgContrast(img,cb); });
+    return;
+  }
+  decodeImgContrast(img,cb);
+}
+
+function decodeImgContrast(img,cb){
+  // Motor 4: jsQR kontrast serileri
+  var contrasts=[{c:2.0,inv:false},{c:2.0,inv:true},{c:3.5,inv:false},{c:3.5,inv:true}];
+  for(var i=0;i<contrasts.length;i++){
+    var p=prepCanvas(img,contrasts[i].c,contrasts[i].inv);
+    var id=p.ctx.getImageData(0,0,p.canvas.width,p.canvas.height);
+    var code=jsQR(id.data,p.canvas.width,p.canvas.height,{inversionAttempts:'dontInvert'});
+    if(code&&code.data){cb(code.data);return;}
+  }
+  // Motor 5: ZXing preprocessed
+  var r=getMFReader();
+  if(r){
     var px=prepCanvas(img,2.5,false);
     var ti=new Image();
     ti.onload=function(){
-      zxingReader.decodeFromImageElement(ti).then(function(r2){
-        cb(r2.getText());
+      r.decodeFromImageElement(ti).then(function(res){
+        cb(res&&res.getText()?res.getText():null);
       }).catch(function(){cb(null);});
     };
     ti.src=px.canvas.toDataURL();
-  });
+  } else { cb(null); }
 }
 function clrImg(){
   document.getElementById('imgprev').src='';
