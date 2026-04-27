@@ -308,7 +308,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v14</span>
+  <span class="hbadge">v15</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -739,9 +739,13 @@ function showResult(res,rawData){
 // ── KAMERA ──────────────────────────────────────────────────────────────────
 var stream=null, scanning=false, raf=null, frameCnt=0, hardFrames=0;
 var vid=null, cnv=null, cx=null, mfReader=null;
+var smCnv=null, smCx=null; // küçük canvas (SW×SH)
+var SW=640, SH=360;        // işlem boyutu — tam kaynak ne olursa olsun
 var zbBusy=false, zxBusy=false;
-var prevFrameBuf=null, motionVal=0;
-var CAM_HARD_RESET=250;
+var prevBuf=null, motionVal=0;
+var CAM_HARD_RESET=300;
+// Pre-allocated buffers (kamera başlayınca tahsis edilir, her karede sıfırdan allocation yok)
+var gBuf=null,blBuf=null,otBuf=null,boBuf=null,laBuf=null,intBuf=null,histBuf=null;
 
 function getMFReader(){
   if(!mfReader){
@@ -759,6 +763,22 @@ function initCam(){
   vid=document.getElementById('video');
   cnv=document.getElementById('qrc');
   cx=cnv.getContext('2d',{willReadFrequently:true});
+  // Küçük işlem canvas'ı — GPU bant genişliği korunur
+  smCnv=document.createElement('canvas');
+  smCnv.width=SW; smCnv.height=SH;
+  smCx=smCnv.getContext('2d',{willReadFrequently:true});
+}
+
+function allocBufs(){
+  var N=SW*SH;
+  gBuf   = new Uint8Array(N);
+  blBuf  = new Uint8Array(N);
+  otBuf  = new Uint8ClampedArray(N*4);
+  boBuf  = new Uint8ClampedArray(N*4);
+  laBuf  = new Uint8ClampedArray(N*4);
+  intBuf = new Int32Array(N);
+  histBuf= new Uint32Array(256);
+  prevBuf= new Uint8Array(N);
 }
 
 function startCam(){
@@ -770,19 +790,27 @@ function startCam(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
     showToast('Kamera API\'si desteklenmiyor.');return;
   }
-  resetMFReader(); prevFrameBuf=null;
+  resetMFReader();
   navigator.mediaDevices.getUserMedia({
     video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
   }).then(function(s){
     stream=s; vid.srcObject=s; vid.play();
+    vid.onloadedmetadata=function(){
+      // Video boyutuna göre SW/SH ayarla, sonra buffer tahsis et
+      var vw=vid.videoWidth||1280, vh=vid.videoHeight||720;
+      SW=vw>>1; SH=vh>>1; // yarı ölçek
+      smCnv.width=SW; smCnv.height=SH;
+      allocBufs();
+    };
     document.getElementById('cidle').style.display='none';
     document.getElementById('bstop').style.display='block';
     document.getElementById('sbar').style.display='block';
     document.getElementById('cdot').classList.add('on');
     document.getElementById('cstat').textContent='Karekod / Barkod Taranıyor…';
     var h=document.getElementById('camhint');
-    if(h){h.style.display='block';h.textContent='QR\'ı çerçeve içine al · Yaklaştır';h.className='camhint';}
+    if(h){h.style.display='block';h.textContent='🔍 QR\'ı çerçeve içine al';h.className='camhint';}
     scanning=true; frameCnt=0; hardFrames=0;
+    allocBufs(); // hemen tahsis et, metadata gelmeden önce başla
     scanLoop();
   }).catch(function(e){
     showToast('Kamera açılamadı: '+(e.message||e));
@@ -800,97 +828,150 @@ function scanLoop(){
   hardFrames++;
   if(hardFrames>=CAM_HARD_RESET){ resetMFReader(); hardFrames=0; }
 
-  if(vid.readyState>=vid.HAVE_ENOUGH_DATA){
-    var vw=vid.videoWidth||640, vh=vid.videoHeight||480;
-    cnv.width=vw; cnv.height=vh;
-    cx.drawImage(vid,0,0);
-    var id=cx.getImageData(0,0,vw,vh);
+  if(vid.readyState<vid.HAVE_ENOUGH_DATA){ raf=requestAnimationFrame(scanLoop); return; }
 
-    // Hareket tespiti
-    motionVal=calcMotion(id.data,vw,vh);
-    var hh=document.getElementById('camhint');
-    if(hh&&scanning){
-      if(motionVal>22){hh.textContent='📷 Kamerayı Sabitle';hh.className='camhint warn';}
-      else{hh.textContent='🔍 QR\'ı çerçeve içine al';hh.className='camhint';}
-    }
+  // ── Küçük canvas'a çiz (SW×SH = yarı ölçek, 4× daha hızlı işlem) ────
+  smCx.drawImage(vid,0,0,SW,SH);
+  var id=smCx.getImageData(0,0,SW,SH);
+  var px=id.data; // Uint8ClampedArray, SW×SH×4
 
-    // Ön işleme — bir kere hesapla, tüm motorlar kullanır
-    var gray    = toGray(id.data,vw,vh);
-    var blurred = boxBlur3(gray,vw,vh);          // moire/gürültü gider
-    var otsu    = otsuBin(gray,vw,vh);            // global eşik
-    var botsu   = otsuBin(blurred,vw,vh);         // blur + global eşik (ekran için kritik)
-    var ladap   = localAdaptive(blurred,vw,vh,24);// yerel adaptif (eşitsiz aydınlatma)
-
-    // Motor 1: jsQR ham
-    var c=jsQR(id.data,vw,vh,{inversionAttempts:'attemptBoth'});
-    if(c&&c.data){camFound(c.data);return;}
-
-    // Motor 2: jsQR Otsu
-    var c2=jsQR(otsu,vw,vh,{inversionAttempts:'attemptBoth'});
-    if(c2&&c2.data){camFound(c2.data);return;}
-
-    // Motor 3: jsQR BlurOtsu — ekran moire için
-    var c3=jsQR(botsu,vw,vh,{inversionAttempts:'attemptBoth'});
-    if(c3&&c3.data){camFound(c3.data);return;}
-
-    // Motor 4: zbar ham
-    if(!zbBusy&&typeof zbarWasm!=='undefined'){
-      zbBusy=true;
-      zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(id.data),vw,vh))
-      .then(function(res){zbBusy=false;var t=zbTxt(res);if(t)camFound(t);})
-      .catch(function(){zbBusy=false;});
-    }
-
-    // Motor 5: zbar BlurOtsu — ekran için, 2 karede bir
-    if(frameCnt%2===0&&!zbBusy&&typeof zbarWasm!=='undefined'){
-      zbBusy=true;
-      zbarWasm.scanImageData(new ImageData(botsu,vw,vh))
-      .then(function(res){zbBusy=false;var t=zbTxt(res);if(t)camFound(t);})
-      .catch(function(){zbBusy=false;});
-    }
-
-    // Motor 6: zbar Yerel Adaptif — eşitsiz aydınlatma, 3 karede bir
-    if(frameCnt%3===1&&!zbBusy&&typeof zbarWasm!=='undefined'){
-      zbBusy=true;
-      zbarWasm.scanImageData(new ImageData(ladap,vw,vh))
-      .then(function(res){zbBusy=false;var t=zbTxt(res);if(t)camFound(t);})
-      .catch(function(){zbBusy=false;});
-    }
-
-    // Motor 7: zbar Yarı Ölçek — yüksek yoğunluklu/uzak QR, 4 karede bir
-    if(frameCnt%4===2&&!zbBusy&&typeof zbarWasm!=='undefined'){
-      var hs=halfScale(blurred,vw,vh);
-      if(hs){zbBusy=true;
-        zbarWasm.scanImageData(new ImageData(hs.d,hs.w,hs.h))
-        .then(function(res){zbBusy=false;var t=zbTxt(res);if(t)camFound(t);})
-        .catch(function(){zbBusy=false;});}
-    }
-
-    // Motor 8: jsQR Yerel Adaptif — 3 karede bir
-    if(frameCnt%3===2){
-      var c8=jsQR(ladap,vw,vh,{inversionAttempts:'dontInvert'});
-      if(c8&&c8.data){camFound(c8.data);return;}
-    }
-
-    // Motor 9: ZXing MultiFormat — barkod, 20 karede bir
-    if(frameCnt%20===10&&!zxBusy){
-      zxBusy=true;
-      var r=getMFReader();
-      if(r){
-        var url=cnv.toDataURL('image/jpeg',0.88);
-        var ti=new Image();
-        ti.onload=function(){
-          if(!scanning){zxBusy=false;ti.src='';return;}
-          r.decodeFromImageElement(ti).then(function(res){
-            zxBusy=false;
-            if(res&&res.getText()) camFound(res.getText());
-          }).catch(function(){zxBusy=false;});
-          ti.src='';
-        };
-        ti.src=url;
-      } else { zxBusy=false; }
-    }
+  // ── Hareket tespiti (sampled, allocation yok) ─────────────────────────
+  var mSum=0;
+  for(var mi=0;mi<px.length;mi+=px.length>>5) mSum+=Math.abs(px[mi]-(prevBuf[mi>>2]||0));
+  motionVal=mSum>>5;
+  var hh=document.getElementById('camhint');
+  if(hh&&scanning){
+    if(motionVal>20){hh.textContent='📷 Kamerayı Sabitle';hh.className='camhint warn';}
+    else{hh.textContent='🔍 QR\'ı çerçeve içine al';hh.className='camhint';}
   }
+
+  // ── Gray (compact, 1B/px, pre-alloc gBuf) ────────────────────────────
+  var N=SW*SH;
+  for(var i=0,j=0;j<N;i+=4,j++){
+    gBuf[j]=((px[i]*77+px[i+1]*150+px[i+2]*29)>>8); // integer luma, hızlı
+    prevBuf[j]=px[i];
+  }
+
+  // ── Separable 3-tap blur (2 pass, O(3N)) — moire giderir ─────────────
+  // H pass: blBuf = horizontal blur of gBuf
+  for(var y=0;y<SH;y++){
+    var base=y*SW;
+    blBuf[base]=((gBuf[base]<<1)+gBuf[base+1])/3|0;
+    for(var x=1;x<SW-1;x++) blBuf[base+x]=(gBuf[base+x-1]+gBuf[base+x]+gBuf[base+x+1])/3|0;
+    blBuf[base+SW-1]=(gBuf[base+SW-2]+(gBuf[base+SW-1]<<1))/3|0;
+  }
+  // V pass: blBuf = vertical blur of blBuf (in-place with tmp)
+  for(var x=0;x<SW;x++){
+    var p=blBuf[x],c,n;
+    for(var y=1;y<SH-1;y++){c=blBuf[y*SW+x];n=blBuf[(y+1)*SW+x];blBuf[y*SW+x]=(p+c+n)/3|0;p=c;}
+  }
+
+  // ── Otsu eşik (gBuf üzerinde) ─────────────────────────────────────────
+  var hist=histBuf; hist.fill(0);
+  for(var j=0;j<N;j++) hist[gBuf[j]]++;
+  var total=N,sum=0;
+  for(var t=0;t<256;t++) sum+=t*hist[t];
+  var sumB=0,wB=0,maxV=0,thr=128;
+  for(var t=0;t<256;t++){
+    wB+=hist[t]; if(!wB) continue;
+    var wF=total-wB; if(!wF) break;
+    sumB+=t*hist[t];
+    var mB=sumB/wB,mF=(sum-sumB)/wF,vv=wB*wF*(mB-mF)*(mB-mF);
+    if(vv>maxV){maxV=vv;thr=t;}
+  }
+
+  // ── RGBA buffer'larını doldur (pre-alloc, zero-copy logic) ───────────
+  // otBuf = Otsu binary (gBuf)
+  // boBuf = BlurOtsu (blBuf, aynı eşik — hızlı)
+  for(var j=0,i=0;j<N;j++,i+=4){
+    var og=gBuf[j]<thr?0:255;
+    otBuf[i]=otBuf[i+1]=otBuf[i+2]=og; otBuf[i+3]=255;
+    var bg=blBuf[j]<thr?0:255;
+    boBuf[i]=boBuf[i+1]=boBuf[i+2]=bg; boBuf[i+3]=255;
+  }
+
+  // ── Motor 1: jsQR ham ─────────────────────────────────────────────────
+  var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
+  if(c&&c.data){camFound(c.data);return;}
+
+  // ── Motor 2: jsQR Otsu ────────────────────────────────────────────────
+  var c2=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
+  if(c2&&c2.data){camFound(c2.data);return;}
+
+  // ── Motor 3: jsQR BlurOtsu — ekran moire için ─────────────────────────
+  var c3=jsQR(boBuf,SW,SH,{inversionAttempts:'attemptBoth'});
+  if(c3&&c3.data){camFound(c3.data);return;}
+
+  // ── Motor 4: zbar ham — her kare, busy flag ───────────────────────────
+  if(!zbBusy&&typeof zbarWasm!=='undefined'){
+    zbBusy=true;
+    zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(px.buffer,px.byteOffset,px.byteLength),SW,SH))
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .catch(function(){zbBusy=false;});
+  }
+
+  // ── Motor 5: zbar BlurOtsu — her kare (offset) ───────────────────────
+  if(!zbBusy&&typeof zbarWasm!=='undefined'){
+    zbBusy=true;
+    zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(boBuf),SW,SH))
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .catch(function(){zbBusy=false;});
+  }
+
+  // ── Motor 6: Yerel Adaptif + zbar — 3 karede bir ─────────────────────
+  if(frameCnt%3===1&&!zbBusy&&typeof zbarWasm!=='undefined'){
+    // Integral image ile yerel adaptif (pre-alloc intBuf)
+    var intg=intBuf;
+    for(var y=0;y<SH;y++){
+      var row=0,base=y*SW;
+      for(var x=0;x<SW;x++){
+        row+=blBuf[base+x];
+        intg[base+x]=row+(y>0?intg[(y-1)*SW+x]:0);
+      }
+    }
+    var half=12; // blk=24 >> 1
+    for(var j=0,i=0;j<N;j++,i+=4){
+      var y=j/SW|0, x=j%SW;
+      var x1=x-half<0?0:x-half, x2=x+half>=SW?SW-1:x+half;
+      var y1=y-half<0?0:y-half, y2=y+half>=SH?SH-1:y+half;
+      var area=(x2-x1+1)*(y2-y1+1);
+      var s=intg[y2*SW+x2]
+        -(x1>0?intg[y2*SW+x1-1]:0)
+        -(y1>0?intg[(y1-1)*SW+x2]:0)
+        +(x1>0&&y1>0?intg[(y1-1)*SW+x1-1]:0);
+      var vv=blBuf[j]<(s/area*0.88)|0?0:255;
+      laBuf[i]=laBuf[i+1]=laBuf[i+2]=vv; laBuf[i+3]=255;
+    }
+    zbBusy=true;
+    zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(laBuf),SW,SH))
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .catch(function(){zbBusy=false;});
+    // jsQR da dene
+    var c6=jsQR(laBuf,SW,SH,{inversionAttempts:'dontInvert'});
+    if(c6&&c6.data){camFound(c6.data);return;}
+  }
+
+  // ── Motor 7: ZXing MultiFormat — barkod, tam ölçek, 25 karede bir ────
+  if(frameCnt%25===12&&!zxBusy){
+    zxBusy=true;
+    var r=getMFReader();
+    if(r){
+      // Tam ölçek canvas ZXing için
+      cnv.width=vid.videoWidth||640; cnv.height=vid.videoHeight||480;
+      cx.drawImage(vid,0,0);
+      var url=cnv.toDataURL('image/jpeg',0.88);
+      var ti=new Image();
+      ti.onload=function(){
+        if(!scanning){zxBusy=false;ti.src='';return;}
+        r.decodeFromImageElement(ti).then(function(rs){
+          zxBusy=false;if(rs&&rs.getText())camFound(rs.getText());
+        }).catch(function(){zxBusy=false;});
+        ti.src='';
+      };
+      ti.src=url;
+    } else { zxBusy=false; }
+  }
+
   frameCnt++;
   raf=requestAnimationFrame(scanLoop);
 }
@@ -900,102 +981,14 @@ function zbTxt(res){
   try{return new TextDecoder('utf-8').decode(new Uint8Array(res[0].data))||null;}catch(e){return null;}
 }
 
-// RGBA → Luminance (gri, RGBA formatında)
-function toGray(rgba,w,h){
-  var out=new Uint8ClampedArray(rgba.length);
-  for(var i=0;i<rgba.length;i+=4){
-    var g=0.299*rgba[i]+0.587*rgba[i+1]+0.114*rgba[i+2];
-    out[i]=out[i+1]=out[i+2]=g; out[i+3]=255;
-  }
-  return out;
+// ── Yardımcı: merkez crop ─────────────────────────────────────────────────
+function getCenterCrop(ctx,vw,vh,ratio){
+  var cw=Math.floor(vw*ratio),ch=Math.floor(vh*ratio);
+  var ox=Math.floor((vw-cw)/2),oy=Math.floor((vh-ch)/2);
+  try{var d=ctx.getImageData(ox,oy,cw,ch);return new ImageData(new Uint8ClampedArray(d.data),cw,ch);}
+  catch(e){return null;}
 }
 
-// 3×3 Box Blur — moire ve kamera gürültüsü giderir
-// Ekran QR okumada kritik: piksel ızgarası interferansını yumuşatır
-function boxBlur3(gray,w,h){
-  var out=new Uint8ClampedArray(gray.length);
-  for(var y=0;y<h;y++){
-    for(var x=0;x<w;x++){
-      var sum=0,cnt=0;
-      for(var dy=-1;dy<=1;dy++){
-        var ny=y+dy; if(ny<0||ny>=h) continue;
-        for(var dx=-1;dx<=1;dx++){
-          var nx=x+dx; if(nx<0||nx>=w) continue;
-          sum+=gray[(ny*w+nx)*4]; cnt++;
-        }
-      }
-      var i=(y*w+x)*4,v=sum/cnt;
-      out[i]=out[i+1]=out[i+2]=v; out[i+3]=255;
-    }
-  }
-  return out;
-}
-
-// Global Otsu Eşikleme — otomatik optimal siyah/beyaz eşiği
-function otsuBin(gray,w,h){
-  var hist=new Uint32Array(256);
-  for(var i=0;i<gray.length;i+=4) hist[gray[i]]++;
-  var total=w*h,sum=0;
-  for(var t=0;t<256;t++) sum+=t*hist[t];
-  var sumB=0,wB=0,maxV=0,thr=128;
-  for(var t=0;t<256;t++){
-    wB+=hist[t]; if(!wB) continue;
-    var wF=total-wB; if(!wF) break;
-    sumB+=t*hist[t];
-    var mB=sumB/wB,mF=(sum-sumB)/wF,v=wB*wF*(mB-mF)*(mB-mF);
-    if(v>maxV){maxV=v;thr=t;}
-  }
-  var out=new Uint8ClampedArray(gray.length);
-  for(var i=0;i<gray.length;i+=4){
-    var b=gray[i]<thr?0:255;
-    out[i]=out[i+1]=out[i+2]=b; out[i+3]=255;
-  }
-  return out;
-}
-
-// Yerel Adaptif Eşikleme (Integral görüntü, O(w*h)) — eşitsiz aydınlatma için
-// Ekran parlaması, spot ışık, eğik tutma: Otsu'dan üstün
-function localAdaptive(gray,w,h,blk){
-  var intg=new Float32Array(w*h);
-  for(var y=0;y<h;y++){
-    var row=0;
-    for(var x=0;x<w;x++){
-      row+=gray[(y*w+x)*4];
-      intg[y*w+x]=row+(y>0?intg[(y-1)*w+x]:0);
-    }
-  }
-  var half=blk>>1,out=new Uint8ClampedArray(gray.length);
-  for(var y=0;y<h;y++){
-    for(var x=0;x<w;x++){
-      var x1=Math.max(0,x-half),x2=Math.min(w-1,x+half);
-      var y1=Math.max(0,y-half),y2=Math.min(h-1,y+half);
-      var area=(x2-x1+1)*(y2-y1+1);
-      var s=intg[y2*w+x2]
-        -(x1>0?intg[y2*w+x1-1]:0)
-        -(y1>0?intg[(y1-1)*w+x2]:0)
-        +(x1>0&&y1>0?intg[(y1-1)*w+x1-1]:0);
-      var i=(y*w+x)*4;
-      var v=gray[i]<(s/area)*0.88?0:255;
-      out[i]=out[i+1]=out[i+2]=v; out[i+3]=255;
-    }
-  }
-  return out;
-}
-
-// Yarı Ölçek — yüksek yoğunluklu QR için (4 piksel → 1 piksel)
-function halfScale(gray,w,h){
-  if(w<64||h<64) return null;
-  var w2=w>>1,h2=h>>1,out=new Uint8ClampedArray(w2*h2*4);
-  for(var y=0;y<h2;y++){
-    for(var x=0;x<w2;x++){
-      var a=(y*2*w+x*2)*4,b=(y*2*w+x*2+1)*4;
-      var c=((y*2+1)*w+x*2)*4,d=((y*2+1)*w+x*2+1)*4;
-      var oi=(y*w2+x)*4,v=(gray[a]+gray[b]+gray[c]+gray[d])>>2;
-      out[oi]=out[oi+1]=out[oi+2]=v; out[oi+3]=255;
-    }
-  }
-  return {d:out,w:w2,h:h2};
-}
 
 // Hareket skoru
 function calcMotion(data,w,h){
@@ -1010,7 +1003,7 @@ function calcMotion(data,w,h){
 function stopCam(){
   scanning=false;
   if(raf){cancelAnimationFrame(raf);raf=null;}
-  resetMFReader(); prevFrameBuf=null;
+  resetMFReader();
   if(stream){stream.getTracks().forEach(function(t){t.stop();});}
   stream=null;
   if(vid){vid.srcObject=null;}
