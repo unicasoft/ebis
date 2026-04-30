@@ -127,13 +127,12 @@ main{padding:13px;max-width:600px;margin:0 auto}
 .pdot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:blink 1.5s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* PANEL FILL */
-#p-cam .card,#p-img .card{display:flex;flex-direction:column;min-height:calc(100dvh - 175px)}
-#p-img .card>.card-h{flex-shrink:0}
-#p-img .card>div:not(.card-h){flex:1;display:flex;flex-direction:column}
-#p-img .dropz{flex:1;min-height:0}
+/* IMG PANEL EŞİTLE — kamera card yüksekliğine yaklaştır */
+#p-img .card{display:flex;flex-direction:column}
+#p-img .card>div:not(.card-h){flex:1;display:flex;flex-direction:column;min-height:calc(100vw - 55px)}
+#p-img .dropz{flex:1}
 /* KAMERA */
-.vwrap{position:relative;background:#000;flex:1;min-height:0;overflow:hidden}
+.vwrap{position:relative;background:#000;aspect-ratio:1;overflow:hidden}
 #video{width:100%;height:100%;object-fit:cover;display:block}
 .corners{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .cbox{width:62%;aspect-ratio:1;position:relative}
@@ -419,7 +418,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v23</span>
+  <span class="hbadge">v24</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
