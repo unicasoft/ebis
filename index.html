@@ -109,9 +109,14 @@ main{padding:13px;max-width:600px;margin:0 auto}
 .mtab-i{font-size:24px;margin-bottom:4px;display:block}
 .mtab-l{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--dm);transition:color .2s}
 .mtab.on .mtab-l{color:var(--ac)}
-.menu-hint{font-size:11px;color:var(--dm);text-align:center;padding:5px 0 10px;line-height:1.5}
-.menu-hint-btn{background:none;border:none;color:var(--ac);font-size:11px;font-weight:700;
-  cursor:pointer;padding:0;font-family:'Inter',sans-serif;text-decoration:underline}
+/* TORCH mini buton */
+#btorch{position:absolute;top:8px;right:8px;width:36px;height:36px;
+  border:none;border-radius:50%;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(4px);color:#ffd700;font-size:18px;cursor:pointer;
+  z-index:15;display:none;align-items:center;justify-content:center;
+  transition:background .1s,transform .1s}
+#btorch.on{background:rgba(255,215,0,.35);color:#fff}
+#btorch:active{transform:scale(.9)}
 
 /* KART */
 .card{background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;
@@ -287,10 +292,10 @@ textarea.minp::placeholder{color:var(--dm)}
 #dr-list-body{overflow-y:auto;flex:1;padding:6px 0}
 .dr-hist-item{padding:11px 16px;border-bottom:1px solid var(--bd);cursor:pointer}
 .dr-hist-item:active{background:var(--s2)}
-.dr-hist-meta{font-size:10px;color:var(--dm);margin-bottom:3px;
+.dr-hist-meta{font-size:11px;color:var(--dm);margin-bottom:4px;
   display:flex;justify-content:space-between}
 .dr-hist-val{font-family:'JetBrains Mono','Courier New',monospace;
-  font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;
+  font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;max-width:100%}
 .dr-hist-fav{float:right;background:none;border:none;font-size:16px;
   cursor:pointer;padding:0 0 0 8px;color:var(--dm)}
@@ -410,7 +415,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v20</span>
+  <span class="hbadge">v21</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -452,7 +457,6 @@ canvas{display:none}
       <span class="mtab-i">🖼️</span><span class="mtab-l">Resimden Oku</span>
     </div>
   </div>
-  <div class="menu-hint">💡 Metin doğrulama, geçmiş ve favoriler için <button onclick="openDrawer()" class="menu-hint-btn">☰ Menü</button>'yü kullanın</div>
 
   <!-- KAMERA PANELİ -->
   <div id="p-cam">
@@ -470,9 +474,9 @@ canvas{display:none}
           <button class="btnp" id="btnstart" onclick="startCam()">Kamerayı Başlat</button>
         </div>
         <div class="camhint" id="camhint" style="display:none">🔍 QR'ı çerçeve içine al · Yaklaştır</div>
+        <button id="btorch" onclick="toggleTorch()" title="El Feneri">💡</button>
       </div>
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
-      <button class="bstop" id="btorch" onclick="toggleTorch()" style="display:none;background:rgba(255,200,0,.15);border-color:rgba(255,200,0,.4);color:#e0b800">🔦 Fener</button>
     </div>
   </div>
 
@@ -1034,12 +1038,39 @@ function drFavToggle(btn,raw){
 
 // ── DRAWER ────────────────────────────────────────────────────────────────────
 function openDrawer(){
-  // Kamera çalışıyorsa RAF'ı geçici durdur (UI thread'i serbest bırak)
   if(scanning&&raf){cancelAnimationFrame(raf);raf=null;}
-  document.getElementById('drawer').classList.add('open');
+  var dr=document.getElementById('drawer');
+  dr.classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
   closeDrList();
   closeDrVal();
+  // Sola sürükle ile kapat
+  var sx=0,sy=0,dragging=false;
+  function onTS(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;dragging=true;}
+  function onTM(e){
+    if(!dragging) return;
+    var dx=e.touches[0].clientX-sx;
+    var dy=Math.abs(e.touches[0].clientY-sy);
+    if(dx<-8&&dy<Math.abs(dx)){
+      // Anlık sürükleme geri bildirimi
+      var prog=Math.min(1,Math.abs(dx)/180);
+      dr.style.transform='translateX('+Math.round(dx)+'px)';
+      document.getElementById('drawer-overlay').style.opacity=(1-prog)*0.55;
+    }
+  }
+  function onTE(e){
+    dragging=false;
+    var dx=e.changedTouches[0].clientX-sx;
+    dr.style.transform='';
+    document.getElementById('drawer-overlay').style.opacity='';
+    if(dx<-60) closeDrawer();
+    dr.removeEventListener('touchstart',onTS);
+    dr.removeEventListener('touchmove',onTM);
+    dr.removeEventListener('touchend',onTE);
+  }
+  dr.addEventListener('touchstart',onTS,{passive:true});
+  dr.addEventListener('touchmove',onTM,{passive:true});
+  dr.addEventListener('touchend',onTE);
 }
 function closeDrawer(){
   document.getElementById('drawer').classList.remove('open');
@@ -1161,7 +1192,8 @@ function startCam(){
       torchTrack=stream.getVideoTracks()[0];
       var caps=torchTrack.getCapabilities?torchTrack.getCapabilities():{};
       if(caps.torch){
-        document.getElementById('btorch').style.display='block';
+        var tb=document.getElementById('btorch');
+        tb.style.display='flex';
       }
     };
     document.getElementById('cidle').style.display='none';
@@ -1390,6 +1422,7 @@ function stopCam(){
   if(torchOn&&torchTrack){
     try{torchTrack.applyConstraints({advanced:[{torch:false}]});}catch(e){}
     torchOn=false;
+    document.getElementById('btorch').classList.remove('on');
   }
   torchTrack=null;
   document.getElementById('btorch').style.display='none';
@@ -1408,10 +1441,11 @@ function stopCam(){
 function toggleTorch(){
   if(!torchTrack) return;
   torchOn=!torchOn;
-  torchTrack.applyConstraints({advanced:[{torch:torchOn}]}).catch(function(){torchOn=!torchOn;});
+  // Anlık uygula — applyConstraints beklemeden state güncelle
   var b=document.getElementById('btorch');
-  b.textContent=torchOn?'🔦 Fener ●':'🔦 Fener';
-  b.style.background=torchOn?'rgba(255,200,0,.35)':'rgba(255,200,0,.15)';
+  b.classList.toggle('on',torchOn);
+  torchTrack.applyConstraints({advanced:[{torch:torchOn}]})
+    .catch(function(){torchOn=!torchOn;b.classList.toggle('on',torchOn);});
 }
 var dz=null;
 function initDrop(){
@@ -1723,10 +1757,12 @@ window.addEventListener('load',function(){
   if(!window.isSecureContext) document.getElementById('hwarn').style.display='block';
   var sv=localStorage.getItem('k-theme');
   if(sv){var b=document.querySelector('.tbtn[data-t="'+sv+'"]');if(b)setTheme(sv,b);}
-  var fsv=localStorage.getItem('k-fsize');
-  if(fsv){var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');if(fb)setFS(fb);}
-  var rfsv=localStorage.getItem('k-rfsize');
-  if(rfsv){var rb=document.querySelector('#rfsc button[data-sz="'+rfsv+'"]');if(rb)setRawFS(rb);}
+  var fsv=localStorage.getItem('k-fsize')||'lg'; // varsayılan A+
+  var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');
+  if(fb)setFS(fb);
+  var rfsv=localStorage.getItem('k-rfsize')||'lg'; // varsayılan A+
+  var rb=document.querySelector('#rfsc button[data-sz="'+rfsv+'"]');
+  if(rb)setRawFS(rb);
   // Otomatik kamera başlatma
   if(window.isSecureContext&&navigator.mediaDevices){
     setTimeout(startCam,500);
