@@ -248,13 +248,14 @@ textarea.minp::placeholder{color:var(--dm)}
 
 /* DRAWER OVERLAY */
 #drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);
-  z-index:900;opacity:0;pointer-events:none;transition:opacity .28s}
+  z-index:900;opacity:0;pointer-events:none;transition:opacity .15s linear;will-change:opacity}
 #drawer-overlay.open{opacity:1;pointer-events:all}
 
 /* DRAWER */
 #drawer{position:fixed;left:0;top:0;bottom:0;width:270px;max-width:82vw;
   background:var(--s1);z-index:910;transform:translateX(-100%);
-  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  transition:transform .16s cubic-bezier(.25,0,.25,1);
+  will-change:transform;
   display:flex;flex-direction:column;overflow:hidden;
   border-right:1.5px solid var(--bd);box-shadow:4px 0 24px rgba(0,0,0,.35)}
 #drawer.open{transform:translateX(0)}
@@ -290,6 +291,28 @@ textarea.minp::placeholder{color:var(--dm)}
   cursor:pointer;padding:0 0 0 8px;color:var(--dm)}
 .dr-hist-fav.on{color:#f5c518}
 .dr-empty{padding:28px 18px;text-align:center;color:var(--dm);font-size:13px}
+/* Drawer doğrulama paneli */
+#dr-val-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.dr-val-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--bd);background:var(--s2)}
+.dr-val-hd button{background:none;border:none;color:var(--ac);font-size:13px;font-weight:600;cursor:pointer}
+#dr-val-panel textarea{flex:1;background:var(--s2);border:none;
+  border-bottom:1.5px solid var(--bd);padding:12px 14px;
+  font-family:'JetBrains Mono','Courier New',monospace;font-size:12px;
+  color:var(--tx);resize:none;outline:none;min-height:120px;
+  line-height:1.6}
+#dr-val-panel textarea::placeholder{color:var(--dm);font-family:'Inter',sans-serif;font-size:12px}
+.dr-val-btn{margin:12px 14px;padding:12px;
+  background:linear-gradient(135deg,var(--ac2),var(--ac));
+  border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer}
+/* Sonuç altı kopyala/paylaş */
+.result-actions{display:flex;gap:8px;margin-top:0;padding:0 0 8px}
+.ra-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:12px 8px;border:1.5px solid var(--bd);border-radius:9px;
+  background:var(--s2);color:var(--tx);font-size:13px;font-weight:600;
+  cursor:pointer;transition:background .15s;font-family:'Inter',sans-serif}
+.ra-btn:active{background:var(--s3)}
 
 /* TERMINAL HAM VERİ */
 .rawbody{padding:0;font-family:'JetBrains Mono','Courier New',monospace;
@@ -382,7 +405,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v18</span>
+  <span class="hbadge">v19</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -517,6 +540,10 @@ canvas{display:none}
         <div class="rawbody" id="rawbody"></div>
       </div>
     </div>
+    <div class="result-actions">
+      <button class="ra-btn" onclick="raCopy()">📋 Kopyala</button>
+      <button class="ra-btn" onclick="raShare()">🔗 Paylaş</button>
+    </div>
     <button class="btnrs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
   </div>
 </main>
@@ -553,6 +580,7 @@ canvas{display:none}
   <div class="dr-menu">
     <div class="dr-item" onclick="drAction('scan')"><span class="dr-ic">📷</span>Tara</div>
     <div class="dr-item" onclick="drAction('img')"><span class="dr-ic">🖼</span>Görüntü Tarama</div>
+    <div class="dr-item" onclick="drAction('text')"><span class="dr-ic">⌨</span>Metin Doğrula</div>
     <div class="dr-sep"></div>
     <div class="dr-item" onclick="drAction('favs')"><span class="dr-ic">⭐</span>Favoriler</div>
     <div class="dr-item" onclick="drAction('hist')"><span class="dr-ic">🕐</span>Geçmiş</div>
@@ -561,6 +589,15 @@ canvas{display:none}
     <div class="dr-item" onclick="drAction('share')"><span class="dr-ic">🔗</span>Paylaş</div>
     <div class="dr-sep"></div>
     <div class="dr-item" onclick="drAction('clrhist')"><span class="dr-ic">🗑</span>Geçmişi Temizle</div>
+  </div>
+  <!-- Metin doğrulama paneli -->
+  <div id="dr-val-panel">
+    <div class="dr-val-hd">
+      <button onclick="closeDrVal()">← Geri</button>
+      <span style="font-size:13px;font-weight:700;color:var(--tx)">⌨ Metin Doğrula</span>
+    </div>
+    <textarea id="dr-val-input" placeholder="EBİS, GİB JSON, URL, barkod içeriği...&#10;&#10;Yapıştırın ve Doğrula'ya basın."></textarea>
+    <button class="dr-val-btn" onclick="drValSubmit()">Doğrula →</button>
   </div>
   <!-- Geçmiş / Favori paneli -->
   <div id="dr-list" style="display:none">
@@ -697,12 +734,27 @@ function detectAndValidate(raw){
   var t=raw.trim();
   if(t.charAt(0)==='{') return validateGIB(t);
   if(t.indexOf('E1')===0&&t.indexOf(GS)>0) return validateEBIS(t.replace(/│/g,GS).replace(/\|/g,GS));
-  // EBİS | pipe ayraçlı mı?
   var piped=t.replace(/│/g,'|').replace(new RegExp(GS,'g'),'|');
   if(t.indexOf('E1')===0&&piped.split('|').length>3) return validateEBIS(t.replace(/│/g,GS).replace(/\|/g,GS));
-  // Bilinmeyen format — ham veri göster
-  return {fmt:'unknown',di:{t:'unknown',n:'Bilinmeyen Format',s:'EBİS veya GİB değil',logo:''},
-    ok:null,errs:[],fv:{},ferr:{},fields:[]};
+  // Format tespiti
+  var fmt=detectFmt(t);
+  return {fmt:'unknown',di:{t:'unknown',n:fmt.n,s:fmt.s,logo:''},
+    ok:null,errs:[],fv:{},ferr:{},fields:[],fmtBadge:fmt.badge};
+}
+
+function detectFmt(t){
+  if(/^https?:\/\//i.test(t)) return {n:'URL',s:t.length>60?t.substring(0,60)+'…':t,badge:'URL'};
+  if(/^ftp:\/\//i.test(t))    return {n:'FTP URL',s:t,badge:'FTP'};
+  if(/^mailto:/i.test(t))     return {n:'E-posta Bağlantısı',s:t.replace(/^mailto:/i,''),badge:'EMAIL'};
+  if(/^tel:/i.test(t))        return {n:'Telefon Numarası',s:t.replace(/^tel:/i,''),badge:'TEL'};
+  if(/^BEGIN:VCARD/i.test(t)) return {n:'vCard Kişi Kartı',s:'',badge:'VCARD'};
+  if(/^BEGIN:VCALENDAR/i.test(t)) return {n:'Takvim Etkinliği',s:'',badge:'iCAL'};
+  if(/^SMSTO?:/i.test(t))     return {n:'SMS',s:'',badge:'SMS'};
+  if(/^WIFI:/i.test(t))       return {n:'Wi-Fi Ağı',s:'',badge:'WIFI'};
+  if(/^GEO:/i.test(t))        return {n:'Coğrafi Konum',s:'',badge:'GEO'};
+  if(/^\d{8,13}$/.test(t))    return {n:'Barkod (EAN/UPC)',s:t,badge:'BARKOD'};
+  if(/^[A-Z0-9\-\.$ \/\+%]+$/.test(t)&&t.length<=80) return {n:'Code39 / Code128',s:t,badge:'BARKOD'};
+  return {n:'Düz Metin',s:t.length>80?t.substring(0,80)+'…':t,badge:'METİN'};
 }
 
 // ── GİB DOĞRULAMA ──
@@ -815,13 +867,14 @@ function showResult(res,rawData){
   if(isUnknown){
     rh.className='rhead unknown';
     document.getElementById('rico').textContent='📋';
-    document.getElementById('rtitle').textContent='Ham Veri';
-    document.getElementById('rsub').textContent='EBİS / GİB formatı değil — ham içerik gösteriliyor.';
+    document.getElementById('rtitle').textContent=di.n||'Ham Veri';
+    document.getElementById('rsub').textContent=di.s||'EBİS / GİB formatı değil — ham içerik gösteriliyor.';
     document.getElementById('errwrap').style.display='none';
     document.getElementById('flist').style.display='none';
     document.getElementById('rawsec').style.display='block';
-    document.getElementById('rbadge').className='rbadge rb-u';
-    document.getElementById('rbadge').textContent='HAM VERİ';
+    var rb2=document.getElementById('rbadge');
+    rb2.className='rbadge rb-u';
+    rb2.textContent=res.fmtBadge||'HAM VERİ';
     document.getElementById('rawbody').innerHTML=buildTerminal(rawData);
     return;
   }
@@ -988,28 +1041,52 @@ function drFavToggle(btn,raw){
 
 // ── DRAWER ────────────────────────────────────────────────────────────────────
 function openDrawer(){
+  // Kamera çalışıyorsa RAF'ı geçici durdur (UI thread'i serbest bırak)
+  if(scanning&&raf){cancelAnimationFrame(raf);raf=null;}
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
   closeDrList();
+  closeDrVal();
 }
 function closeDrawer(){
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
+  // Kamera açıksa RAF'ı yeniden başlat
+  if(scanning&&!raf) raf=requestAnimationFrame(scanLoop);
+}
+function closeDrVal(){
+  document.getElementById('dr-val-panel').style.display='none';
+  document.querySelector('.dr-menu').style.display='block';
+}
+function drValSubmit(){
+  var v=document.getElementById('dr-val-input').value.trim();
+  if(!v){showToast('Lütfen içerik girin.');return;}
+  closeDrawer();
+  document.getElementById('dr-val-input').value='';
+  procQR(v);
+}
+function raCopy(){
+  if(!_lastRaw){showToast('Henüz sonuç yok.');return;}
+  if(navigator.clipboard) navigator.clipboard.writeText(_lastRaw).then(function(){showToast('✓ Kopyalandı!');});
+  else showToast('Kopyalanamadı.');
+}
+function raShare(){
+  if(!_lastRaw){showToast('Henüz sonuç yok.');return;}
+  if(navigator.share) navigator.share({text:_lastRaw}).catch(function(){});
+  else raCopy();
 }
 function drAction(a){
   if(a==='scan'){closeDrawer();swMode('cam');return;}
   if(a==='img'){closeDrawer();swMode('img');return;}
-  if(a==='copy'){
-    if(_lastRaw){navigator.clipboard&&navigator.clipboard.writeText(_lastRaw).then(function(){showToast('Kopyalandı!');});}
-    else showToast('Henüz tarama yok.');
-    closeDrawer();return;
+  if(a==='text'){
+    document.querySelector('.dr-menu').style.display='none';
+    document.getElementById('dr-val-panel').style.display='flex';
+    document.getElementById('dr-val-panel').style.flexDirection='column';
+    setTimeout(function(){document.getElementById('dr-val-input').focus();},120);
+    return;
   }
-  if(a==='share'){
-    if(_lastRaw&&navigator.share){navigator.share({text:_lastRaw});}
-    else if(_lastRaw){navigator.clipboard&&navigator.clipboard.writeText(_lastRaw);showToast('Panoya kopyalandı.');}
-    else showToast('Henüz tarama yok.');
-    closeDrawer();return;
-  }
+  if(a==='copy'){raCopy();closeDrawer();return;}
+  if(a==='share'){raShare();closeDrawer();return;}
   if(a==='hist'){renderDrList(histLoad(),'🕐 Geçmiş');return;}
   if(a==='favs'){renderDrList(favLoad(),'⭐ Favoriler');return;}
   if(a==='clrhist'){
