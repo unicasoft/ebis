@@ -237,9 +237,31 @@ textarea.minp::placeholder{color:var(--dm)}
 .rb-e{background:rgba(59,158,255,.15);color:var(--ac);border:1px solid rgba(59,158,255,.3)}
 .rb-g{background:rgba(200,40,40,.1);color:#c44;border:1px solid rgba(200,40,40,.25)}
 .rawbody{padding:10px 14px;font-family:monospace;font-size:11.5px;color:var(--dm);
-  word-break:break-all;line-height:1.7;max-height:140px;overflow-y:auto}
+  word-break:break-all;line-height:1.7;max-height:220px;overflow-y:auto}
 .gs{color:var(--ac);font-weight:700}
 .jk{color:var(--ac)}.jv{color:var(--ok)}.js{color:var(--wa)}
+/* Bilinmeyen format — terminal görünümü */
+.rhead.unknown{background:rgba(120,80,200,.12);border-color:rgba(120,80,200,.3)}
+.rhead.unknown .rico{filter:none}
+.rb-u{background:rgba(120,80,200,.15);color:#9b6dff;border:1px solid rgba(120,80,200,.35)}
+.asctbl{width:100%;border-collapse:collapse;font-family:'Courier New',Courier,monospace;font-size:11px}
+.asctbl th{background:rgba(120,80,200,.18);color:#9b6dff;padding:3px 6px;text-align:left;
+  font-size:10px;letter-spacing:1px;border-bottom:1px solid rgba(120,80,200,.3)}
+.asctbl td{padding:2px 6px;border-bottom:1px solid var(--bd)}
+.asc-pos{color:var(--dm);opacity:.55;width:36px}
+.asc-hex{color:#9b6dff;width:48px;font-weight:600}
+.asc-dec{color:var(--dm);width:36px;opacity:.7}
+.asc-chr{color:var(--ok);font-size:13px;font-weight:700}
+.asc-ctrl td{background:rgba(255,90,90,.06)}
+.asc-ctrl .asc-hex{color:#e07060}
+.asc-ctrl .asc-chr{color:#e07060}
+.asc-np{opacity:.45;font-size:10px}
+.asc-raw{margin:10px 14px 4px;padding:8px 10px;background:rgba(0,0,0,.35);border-radius:6px;
+  border:1px solid rgba(120,80,200,.25)}
+.asc-label{display:block;font-size:9px;letter-spacing:1.5px;color:#9b6dff;
+  text-transform:uppercase;margin-bottom:4px;font-weight:700}
+.asc-line{font-family:'Courier New',Courier,monospace;font-size:12px;
+  color:#b0ffa0;word-break:break-all;line-height:1.8}
 
 .btnrs{display:block;width:100%;padding:13px;margin-bottom:8px;
   background:var(--s2);border:1.5px solid var(--bd);border-radius:9px;
@@ -308,7 +330,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v16</span>
+  <span class="hbadge">v17</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -369,6 +391,7 @@ canvas{display:none}
         <div class="camhint" id="camhint" style="display:none">🔍 QR'ı çerçeve içine al · Yaklaştır</div>
       </div>
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
+      <button class="bstop" id="btorch" onclick="toggleTorch()" style="display:none;background:rgba(255,200,0,.15);border-color:rgba(255,200,0,.4);color:#e0b800">🔦 Fener</button>
     </div>
     <div class="card">
       <div class="card-h">⌨ Ham Metin ile Test</div>
@@ -435,9 +458,11 @@ canvas{display:none}
       </div>
       <div id="flist"></div>
     </div>
-    <div class="rawcard">
-      <div class="rawhd">Ham QR İçeriği <span class="rbadge" id="rbadge"></span></div>
-      <div class="rawbody" id="rawbody"></div>
+    <div id="rawsec">
+      <div class="rawcard">
+        <div class="rawhd">Ham QR İçeriği <span class="rbadge" id="rbadge"></span></div>
+        <div class="rawbody" id="rawbody"></div>
+      </div>
     </div>
     <button class="btnrs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
   </div>
@@ -572,7 +597,13 @@ function gibFields(t){
 function detectAndValidate(raw){
   var t=raw.trim();
   if(t.charAt(0)==='{') return validateGIB(t);
-  return validateEBIS(t.replace(/│/g,GS).replace(/\|/g,GS));
+  if(t.indexOf('E1')===0&&t.indexOf(GS)>0) return validateEBIS(t.replace(/│/g,GS).replace(/\|/g,GS));
+  // EBİS | pipe ayraçlı mı?
+  var piped=t.replace(/│/g,'|').replace(new RegExp(GS,'g'),'|');
+  if(t.indexOf('E1')===0&&piped.split('|').length>3) return validateEBIS(t.replace(/│/g,GS).replace(/\|/g,GS));
+  // Bilinmeyen format — ham veri göster
+  return {fmt:'unknown',di:{t:'unknown',n:'Bilinmeyen Format',s:'EBİS veya GİB değil',logo:''},
+    ok:null,errs:[],fv:{},ferr:{},fields:[]};
 }
 
 // ── GİB DOĞRULAMA ──
@@ -663,19 +694,36 @@ function showResult(res,rawData){
   sec.style.display='block';
   setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'start'});},80);
 
+  var isUnknown=(res.fmt==='unknown');
+
   var lw=document.getElementById('dlogowrap');
   var di=res.di||{};
-  if(di.logo==='ebis'&&LOGO_EBIS){
+  if(!isUnknown&&di.logo==='ebis'&&LOGO_EBIS){
     lw.innerHTML='<img class="dlogo" src="'+LOGO_EBIS+'" alt="EBİS">';
-  } else if(di.logo==='gib'&&LOGO_GIB){
+  } else if(!isUnknown&&di.logo==='gib'&&LOGO_GIB){
     lw.innerHTML='<img class="dlogo" src="'+LOGO_GIB+'" alt="GİB">';
   } else {
-    lw.innerHTML='';
+    lw.innerHTML='<span style="font-size:28px">📦</span>';
   }
   document.getElementById('dname').textContent=di.n||'e-Belge';
   document.getElementById('dsub').textContent=di.s||'—';
 
   var rh=document.getElementById('rhead');
+  if(isUnknown){
+    rh.className='rhead unknown';
+    document.getElementById('rico').textContent='📋';
+    document.getElementById('rtitle').textContent='Ham Veri';
+    document.getElementById('rsub').textContent='EBİS / GİB formatı değil — ham içerik gösteriliyor.';
+    document.getElementById('errwrap').style.display='none';
+    document.getElementById('flist').style.display='none';
+    document.getElementById('rawsec').style.display='block';
+    document.getElementById('rbadge').className='rbadge rb-u';
+    document.getElementById('rbadge').textContent='HAM VERİ';
+    document.getElementById('rawbody').innerHTML=buildTerminal(rawData);
+    return;
+  }
+
+  document.getElementById('flist').style.display='';
   rh.className='rhead '+(res.ok?'ok':'fail');
   document.getElementById('rico').textContent=res.ok?'✅':'❌';
   document.getElementById('rtitle').textContent=res.ok?'Format Uygun':'Format Hataları Tespit Edildi';
@@ -716,6 +764,7 @@ function showResult(res,rawData){
   }
   document.getElementById('flist').innerHTML=fl;
 
+  document.getElementById('rawsec').style.display='block';
   var rb=document.getElementById('rbadge');
   var rawhtml='';
   if(res.fmt==='gib'){
@@ -736,16 +785,41 @@ function showResult(res,rawData){
   document.getElementById('rawbody').innerHTML=rawhtml;
 }
 
+// Terminal tarzı ham veri — ASCII kodları göster
+function buildTerminal(data){
+  var out='<table class="asctbl"><thead><tr>'
+    +'<th>POS</th><th>HEX</th><th>DEC</th><th>KAR</th></tr></thead><tbody>';
+  var printRow='<tr class="asc-str"><td colspan="4"><span class="asc-line">';
+  var line='';
+  for(var i=0;i<data.length;i++){
+    var code=data.charCodeAt(i);
+    var hex='0x'+('0'+code.toString(16).toUpperCase()).slice(-2);
+    var isPrint=code>=32&&code<127;
+    var chr=isPrint?data[i]:'·';
+    var rowCls=code<32||code===127?'asc-ctrl':'asc-pri';
+    out+='<tr class="'+rowCls+'"><td class="asc-pos">'+(i+1)+'</td>'
+      +'<td class="asc-hex">'+hex+'</td>'
+      +'<td class="asc-dec">'+code+'</td>'
+      +'<td class="asc-chr">'+(isPrint?data[i].replace(/&/g,'&amp;').replace(/</g,'&lt;'):'<span class="asc-np" title="ASCII '+code+'">&#x2E3B;</span>')+'</td></tr>';
+    line+=isPrint?data[i].replace(/&/g,'&amp;').replace(/</g,'&lt;'):'<span class="asc-np">&#x25AA;</span>';
+  }
+  out+='</tbody></table>';
+  out+='<div class="asc-raw"><span class="asc-label">HAM METİN</span><span class="asc-line">'+line+'</span></div>';
+  return out;
+}
+
 // ── KAMERA ──────────────────────────────────────────────────────────────────
 var stream=null, scanning=false, raf=null, frameCnt=0, hardFrames=0;
 var vid=null, cnv=null, cx=null, mfReader=null;
-var smCnv=null, smCx=null; // küçük canvas (SW×SH)
-var SW=640, SH=360;        // işlem boyutu — tam kaynak ne olursa olsun
+var smCnv=null, smCx=null;
+var SW=640, SH=360;
 var zbBusy=false, zxBusy=false;
 var prevBuf=null, motionVal=0;
 var CAM_HARD_RESET=300;
-// Pre-allocated buffers (kamera başlayınca tahsis edilir, her karede sıfırdan allocation yok)
+var torchOn=false, torchTrack=null;
 var gBuf=null,blBuf=null,otBuf=null,boBuf=null,laBuf=null,intBuf=null,histBuf=null;
+// Tam ölçek zbar canvas
+var fullCnv=null, fullCx=null;
 
 function getMFReader(){
   if(!mfReader){
@@ -763,10 +837,12 @@ function initCam(){
   vid=document.getElementById('video');
   cnv=document.getElementById('qrc');
   cx=cnv.getContext('2d',{willReadFrequently:true});
-  // Küçük işlem canvas'ı — GPU bant genişliği korunur
   smCnv=document.createElement('canvas');
   smCnv.width=SW; smCnv.height=SH;
   smCx=smCnv.getContext('2d',{willReadFrequently:true});
+  // Tam ölçek zbar için ayrı canvas (jsQR'dan bağımsız)
+  fullCnv=document.createElement('canvas');
+  fullCx=fullCnv.getContext('2d',{willReadFrequently:true});
 }
 
 function allocBufs(){
@@ -796,11 +872,17 @@ function startCam(){
   }).then(function(s){
     stream=s; vid.srcObject=s; vid.play();
     vid.onloadedmetadata=function(){
-      // Video boyutuna göre SW/SH ayarla, sonra buffer tahsis et
       var vw=vid.videoWidth||1280, vh=vid.videoHeight||720;
-      SW=vw>>1; SH=vh>>1; // yarı ölçek
+      SW=vw>>1; SH=vh>>1;
       smCnv.width=SW; smCnv.height=SH;
+      fullCnv.width=vw; fullCnv.height=vh;
       allocBufs();
+      // El feneri desteği kontrol et
+      torchTrack=stream.getVideoTracks()[0];
+      var caps=torchTrack.getCapabilities?torchTrack.getCapabilities():{};
+      if(caps.torch){
+        document.getElementById('btorch').style.display='block';
+      }
     };
     document.getElementById('cidle').style.display='none';
     document.getElementById('bstop').style.display='block';
@@ -902,16 +984,21 @@ function scanLoop(){
   var c3=jsQR(boBuf,SW,SH,{inversionAttempts:'attemptBoth'});
   if(c3&&c3.data){camFound(c3.data);return;}
 
-  // ── Motor 4: zbar ham — her kare, busy flag ───────────────────────────
+  // ── Motor 4: zbar TAM ÇÖZÜNÜRLÜK — her kare, busy flag ──────────────────
+  // Kritik: zbar yarı ölçekten değil tam video frame'den çalışır
   if(!zbBusy&&typeof zbarWasm!=='undefined'){
     zbBusy=true;
-    zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(px.buffer,px.byteOffset,px.byteLength),SW,SH))
+    var vw2=vid.videoWidth||SW*2, vh2=vid.videoHeight||SH*2;
+    fullCnv.width=vw2; fullCnv.height=vh2;
+    fullCx.drawImage(vid,0,0,vw2,vh2);
+    var fid=fullCx.getImageData(0,0,vw2,vh2);
+    zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(fid.data),vw2,vh2))
     .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
     .catch(function(){zbBusy=false;});
   }
 
-  // ── Motor 5: zbar BlurOtsu — her kare (offset) ───────────────────────
-  if(!zbBusy&&typeof zbarWasm!=='undefined'){
+  // ── Motor 5: zbar TAM ÇÖZÜNÜRLÜK BlurOtsu — 2 karede bir ─────────────
+  if(frameCnt%2===0&&!zbBusy&&typeof zbarWasm!=='undefined'){
     zbBusy=true;
     zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(boBuf),SW,SH))
     .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
@@ -1020,6 +1107,12 @@ function stopCam(){
   scanning=false;
   if(raf){cancelAnimationFrame(raf);raf=null;}
   resetMFReader();
+  if(torchOn&&torchTrack){
+    try{torchTrack.applyConstraints({advanced:[{torch:false}]});}catch(e){}
+    torchOn=false;
+  }
+  torchTrack=null;
+  document.getElementById('btorch').style.display='none';
   if(stream){stream.getTracks().forEach(function(t){t.stop();});}
   stream=null;
   if(vid){vid.srcObject=null;}
@@ -1032,7 +1125,14 @@ function stopCam(){
   if(h) h.style.display='none';
 }
 
-// ── RESİM ──
+function toggleTorch(){
+  if(!torchTrack) return;
+  torchOn=!torchOn;
+  torchTrack.applyConstraints({advanced:[{torch:torchOn}]}).catch(function(){torchOn=!torchOn;});
+  var b=document.getElementById('btorch');
+  b.textContent=torchOn?'🔦 Fener ●':'🔦 Fener';
+  b.style.background=torchOn?'rgba(255,200,0,.35)':'rgba(255,200,0,.15)';
+}
 var dz=null;
 function initDrop(){
   dz=document.getElementById('dropz');
