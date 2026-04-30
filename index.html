@@ -102,13 +102,16 @@ header{background:var(--s1);border-bottom:2px solid var(--bd);padding:10px 14px;
 main{padding:13px;max-width:600px;margin:0 auto}
 
 /* MOD SEKMELERİ */
-.modtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px}
+.modtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .mtab{background:var(--s1);border:2px solid var(--bd);border-radius:10px;
   padding:12px 8px;cursor:pointer;text-align:center;transition:.2s;user-select:none}
 .mtab.on{border-color:var(--ac);background:rgba(59,158,255,.07)}
 .mtab-i{font-size:24px;margin-bottom:4px;display:block}
 .mtab-l{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--dm);transition:color .2s}
 .mtab.on .mtab-l{color:var(--ac)}
+.menu-hint{font-size:11px;color:var(--dm);text-align:center;padding:5px 0 10px;line-height:1.5}
+.menu-hint-btn{background:none;border:none;color:var(--ac);font-size:11px;font-weight:700;
+  cursor:pointer;padding:0;font-family:'Inter',sans-serif;text-decoration:underline}
 
 /* KART */
 .card{background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;
@@ -405,7 +408,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v19</span>
+  <span class="hbadge">v20</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -447,6 +450,7 @@ canvas{display:none}
       <span class="mtab-i">🖼️</span><span class="mtab-l">Resimden Oku</span>
     </div>
   </div>
+  <div class="menu-hint">💡 Metin doğrulama, geçmiş ve favoriler için <button onclick="openDrawer()" class="menu-hint-btn">☰ Menü</button>'yü kullanın</div>
 
   <!-- KAMERA PANELİ -->
   <div id="p-cam">
@@ -468,15 +472,6 @@ canvas{display:none}
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
       <button class="bstop" id="btorch" onclick="toggleTorch()" style="display:none;background:rgba(255,200,0,.15);border-color:rgba(255,200,0,.4);color:#e0b800">🔦 Fener</button>
     </div>
-    <div class="card">
-      <div class="card-h">⌨ Ham Metin ile Test</div>
-      <div class="mwrap">
-        <label class="mlbl">QR içeriğini yapıştırın (EBİS veya GİB JSON)</label>
-        <textarea class="minp" id="mi1" placeholder="EBİS: E1|A123456|0123456789|...&#10;GİB: {&quot;vkntckn&quot;:&quot;1111111111&quot;,...}"></textarea>
-        <div class="mhint">EBİS için │ veya | Grup Ayraç sayılır. GİB için JSON yapıştırın.</div>
-        <button class="btnv" onclick="valMan('mi1')">Doğrula</button>
-      </div>
-    </div>
   </div>
 
   <!-- RESİM PANELİ -->
@@ -496,15 +491,6 @@ canvas{display:none}
           <div class="prev-ov" id="spinov" style="display:none"><div class="spinner"></div></div>
         </div>
         <button class="bclr" id="bclr" onclick="clrImg()" style="display:none">✕ Resmi Temizle</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-h">⌨ Ham Metin ile Test</div>
-      <div class="mwrap">
-        <label class="mlbl">QR İçeriğini Yapıştırın (EBİS veya GİB JSON)</label>
-        <textarea class="minp" id="mi2" placeholder="{&quot;vkntckn&quot;:&quot;1111111111&quot;,...}"></textarea>
-        <div class="mhint">Otomatik format algılama yapar.</div>
-        <button class="btnv" onclick="valMan('mi2')">Doğrula</button>
       </div>
     </div>
   </div>
