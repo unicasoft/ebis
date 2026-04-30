@@ -235,11 +235,13 @@ textarea.minp::placeholder{color:var(--dm)}
   margin-bottom:12px;overflow:hidden}
 .rawhd{padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:2px;
   text-transform:uppercase;color:var(--lb);background:var(--s2);
-  border-bottom:1.5px solid var(--bd);display:flex;align-items:center;gap:8px}
+  border-bottom:1.5px solid var(--bd);display:flex;align-items:center;gap:8px;
+  justify-content:space-between}
+.rawhd-left{display:flex;align-items:center;gap:8px}
 .rbadge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px}
 .rb-e{background:rgba(59,158,255,.15);color:var(--ac);border:1px solid rgba(59,158,255,.3)}
 .rb-g{background:rgba(200,40,40,.1);color:#c44;border:1px solid rgba(200,40,40,.25)}
-.rawbody{padding:10px 14px;font-family:monospace;font-size:11.5px;color:var(--dm);
+.rawbody{padding:10px 14px;font-family:monospace;font-size:var(--rval-sz,11.5px);color:var(--dm);
   word-break:break-all;line-height:1.7;max-height:220px;overflow-y:auto}
 .gs{color:var(--ac);font-weight:700}
 .jk{color:var(--ac)}.jv{color:var(--ok)}.js{color:var(--wa)}
@@ -319,7 +321,7 @@ textarea.minp::placeholder{color:var(--dm)}
 
 /* TERMINAL HAM VERİ */
 .rawbody{padding:0;font-family:'JetBrains Mono','Courier New',monospace;
-  font-size:12.5px;line-height:1.75;max-height:260px;overflow-y:auto}
+  font-size:var(--rval-sz,12.5px);line-height:1.75;max-height:260px;overflow-y:auto}
 .term-wrap{background:#0d1117;border-radius:0 0 9px 9px;padding:12px 14px;
   word-break:break-all;color:#b0ffa0}
 [data-theme="acik"] .term-wrap{background:#1a1f2e}
@@ -522,7 +524,12 @@ canvas{display:none}
     </div>
     <div id="rawsec">
       <div class="rawcard">
-        <div class="rawhd">Ham QR İçeriği <span class="rbadge" id="rbadge"></span></div>
+        <div class="rawhd"><div class="rawhd-left"><span>Ham QR İçeriği</span> <span class="rbadge" id="rbadge"></span></div>
+          <div class="fsc" id="rfsc">
+            <button data-sz="sm" onclick="setRawFS(this)">A−</button>
+            <button data-sz="md" onclick="setRawFS(this)" class="on">A</button>
+            <button data-sz="lg" onclick="setRawFS(this)">A+</button>
+          </div></div>
         <div class="rawbody" id="rawbody"></div>
       </div>
     </div>
@@ -1643,6 +1650,15 @@ function closeIos(){document.getElementById('iosmodal').style.display='none';}
 
 // ── FONT BOYUTU ──
 var FSIZE_MAP={sm:'11px',md:'14px',lg:'19px'};
+var RSIZE_MAP={sm:'9px',md:'11.5px',lg:'15px'};
+function setRawFS(btn){
+  var sz=btn.getAttribute('data-sz');
+  document.querySelectorAll('#rfsc button').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  var rc=document.getElementById('rawsec');
+  if(rc) rc.style.setProperty('--rval-sz',RSIZE_MAP[sz]);
+  localStorage.setItem('k-rfsize',sz);
+}
 function setFS(btn){
   var sz=btn.getAttribute('data-sz');
   document.querySelectorAll('#fsc button').forEach(function(b){b.classList.remove('on');});
@@ -1709,6 +1725,8 @@ window.addEventListener('load',function(){
   if(sv){var b=document.querySelector('.tbtn[data-t="'+sv+'"]');if(b)setTheme(sv,b);}
   var fsv=localStorage.getItem('k-fsize');
   if(fsv){var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');if(fb)setFS(fb);}
+  var rfsv=localStorage.getItem('k-rfsize');
+  if(rfsv){var rb=document.querySelector('#rfsc button[data-sz="'+rfsv+'"]');if(rb)setRawFS(rb);}
   // Otomatik kamera başlatma
   if(window.isSecureContext&&navigator.mediaDevices){
     setTimeout(startCam,500);
