@@ -476,6 +476,7 @@ canvas{display:none}
           <div class="cidle-t">Kamera Kapalı</div>
           <button class="btnp" id="btnstart" onclick="startCam()">Kamerayı Başlat</button>
         </div>
+        <canvas id="multi-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:20;touch-action:none;cursor:pointer;"></canvas>
         <div class="camhint" id="camhint" style="display:none">🔍 QR'ı çerçeve içine al · Yaklaştır</div>
       </div>
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
@@ -870,7 +871,7 @@ function showResult(res,rawData){
     document.getElementById('rtitle').textContent=di.n||'Ham Veri';
     document.getElementById('rsub').textContent=di.s||'EBİS / GİB formatı değil — ham içerik gösteriliyor.';
     document.getElementById('errwrap').style.display='none';
-    document.getElementById('flist').style.display='none';
+    document.getElementById('ftable').style.display='none';
     document.getElementById('rawsec').style.display='block';
     var rb2=document.getElementById('rbadge');
     rb2.className='rbadge rb-u';
@@ -879,6 +880,8 @@ function showResult(res,rawData){
     return;
   }
 
+  document.getElementById('flist').style.display='';
+  document.getElementById('ftable').style.display='';
   document.getElementById('flist').style.display='';
   rh.className='rhead '+(res.ok?'ok':'fail');
   document.getElementById('rico').textContent=res.ok?'✅':'❌';
@@ -1120,6 +1123,106 @@ function drAction(a){
     if(confirm('Geçmiş silinsin mi?')){histSave([]);showToast('Geçmiş temizlendi.');}
     closeDrawer();return;
   }
+}
+
+// ── ÇOKLU BARKOD SEÇİM ──────────────────────────────────────────────────────
+var barcodeDetector=null, multiSelActive=false, multiCodes=[];
+var MCOLORS=['#3b9eff','#22dd88','#ffb830','#ff4560','#c084fc'];
+
+function initBD(){
+  if(!window.BarcodeDetector) return;
+  BarcodeDetector.getSupportedFormats().then(function(f){
+    barcodeDetector=new BarcodeDetector({formats:f});
+  }).catch(function(){});
+}
+
+function hideMultiSel(){
+  multiSelActive=false; multiCodes=[];
+  var mc=document.getElementById('multi-canvas');
+  if(mc) mc.style.display='';
+}
+
+function showMultiSel(codes){
+  if(multiSelActive||!codes||codes.length<2) return;
+  multiSelActive=true;
+  if(raf){cancelAnimationFrame(raf);raf=null;}
+
+  var wrap=document.querySelector('.vwrap');
+  var cw=wrap.clientWidth||320, ch=wrap.clientHeight||320;
+  var mc=document.getElementById('multi-canvas');
+  mc.width=cw; mc.height=ch;
+  var ctx=mc.getContext('2d');
+
+  var vw=vid.videoWidth||640, vh=vid.videoHeight||480;
+  var sc=Math.max(cw/vw,ch/vh);
+  var ox=(cw-vw*sc)/2, oy=(ch-vh*sc)/2;
+
+  // Dondurulmuş kare
+  ctx.drawImage(vid,0,0,vw,vh,ox,oy,vw*sc,vh*sc);
+  // Dim overlay
+  ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,cw,ch);
+
+  multiCodes=codes;
+  codes.forEach(function(bc,i){
+    var col=MCOLORS[i%MCOLORS.length];
+    var b=bc.boundingBox;
+    var x=b.x*sc+ox, y=b.y*sc+oy, w=b.width*sc, h=b.height*sc;
+    // Glow çerçeve
+    ctx.shadowColor=col; ctx.shadowBlur=12;
+    ctx.strokeStyle=col; ctx.lineWidth=3.5;
+    ctx.strokeRect(x,y,w,h);
+    ctx.shadowBlur=0;
+    // Sayı etiketi
+    var lx=x, ly=y-26<0?y+h+2:y-26;
+    ctx.fillStyle=col;
+    ctx.fillRect(lx,ly,32,24);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 15px Inter,sans-serif';
+    ctx.textBaseline='middle'; ctx.textAlign='center';
+    ctx.fillText(String(i+1),lx+16,ly+12);
+    ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+  });
+
+  mc.style.display='block';
+  var hint=document.getElementById('camhint');
+  if(hint){
+    hint.style.display='block';
+    hint.textContent='👆 '+codes.length+' kod bulundu — okumak istediğine dokun';
+    hint.className='camhint warn';
+  }
+
+  function onTap(e){
+    e.preventDefault();
+    var rect=mc.getBoundingClientRect();
+    var cx2=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    var cy2=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    var px=cx2*(mc.width/rect.width);
+    var py=cy2*(mc.height/rect.height);
+
+    var found=null, bestArea=Infinity;
+    multiCodes.forEach(function(bc){
+      var b=bc.boundingBox;
+      var x=b.x*sc+ox, y=b.y*sc+oy, w=b.width*sc, h=b.height*sc;
+      var pad=22;
+      if(px>=x-pad&&px<=x+w+pad&&py>=y-pad&&py<=y+h+pad){
+        var area=w*h; if(area<bestArea){bestArea=area;found=bc.rawValue;}
+      }
+    });
+
+    mc.removeEventListener('click',onTap);
+    mc.removeEventListener('touchend',onTap);
+    hideMultiSel();
+
+    if(found){
+      camFound(found);
+    } else {
+      // Kutu dışı dokunuş → taramaya devam
+      multiSelActive=false;
+      raf=requestAnimationFrame(scanLoop);
+    }
+  }
+  mc.addEventListener('click',onTap);
+  mc.addEventListener('touchend',onTap,{passive:false});
 }
 
 // ── KAMERA ──────────────────────────────────────────────────────────────────
@@ -1390,6 +1493,15 @@ function scanLoop(){
     } else { zxBusy=false; }
   }
 
+  // BarcodeDetector — çoklu kod tespiti (her 8 karede bir)
+  if(frameCnt%8===0&&barcodeDetector&&!multiSelActive){
+    barcodeDetector.detect(vid).then(function(codes){
+      if(!scanning||multiSelActive) return;
+      if(codes.length===1) camFound(codes[0].rawValue);
+      else if(codes.length>1) showMultiSel(codes);
+    }).catch(function(){});
+  }
+
   frameCnt++;
   raf=requestAnimationFrame(scanLoop);
 }
@@ -1419,6 +1531,7 @@ function calcMotion(data,w,h){
 
 
 function stopCam(){
+  hideMultiSel();
   scanning=false;
   if(raf){cancelAnimationFrame(raf);raf=null;}
   resetMFReader();
@@ -1753,6 +1866,7 @@ if('serviceWorker' in navigator){
 // ── INIT ──
 window.addEventListener('load',function(){
   initCam();
+  initBD();
   initDrop();
   var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
   var sa=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
