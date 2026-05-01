@@ -458,7 +458,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v28</span>
+  <span class="hbadge">v29</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -1247,6 +1247,53 @@ function drAction(a){
 // ── ÇOKLU BARKOD SEÇİM ──────────────────────────────────────────────────────
 var barcodeDetector=null, multiSelActive=false, multiCodes=[];
 var MCOLORS=['#3b9eff','#22dd88','#ffb830','#ff4560','#c084fc'];
+var snapCnv=null, snapCx=null; // Snapshot canvas — BD çağrısı öncesi yakalar
+
+function initSnapCanvas(){
+  snapCnv=document.createElement('canvas');
+  snapCx=snapCnv.getContext('2d');
+}
+
+// IoU — iki bbox örtüşme oranı
+function bboxIoU(a,b){
+  if(!a||!b) return 0;
+  var ax2=a.x+a.width, ay2=a.y+a.height;
+  var bx2=b.x+b.width, by2=b.y+b.height;
+  var ix=Math.max(0,Math.min(ax2,bx2)-Math.max(a.x,b.x));
+  var iy=Math.max(0,Math.min(ay2,by2)-Math.max(a.y,b.y));
+  var inter=ix*iy;
+  var ua=a.width*a.height, ub=b.width*b.height;
+  var union=ua+ub-inter;
+  return union>0?inter/union:0;
+}
+
+// Örtüşen bbox'ları sil — IoU>0.30 ise büyük olanı koru
+function iouDedup(codes){
+  var out=[];
+  codes.forEach(function(c){
+    var merged=false;
+    for(var i=0;i<out.length;i++){
+      if(bboxIoU(c.boundingBox,out[i].boundingBox)>0.30){
+        // Büyük olanı koru
+        var ac=(c.boundingBox?c.boundingBox.width*c.boundingBox.height:0);
+        var ao=(out[i].boundingBox?out[i].boundingBox.width*out[i].boundingBox.height:0);
+        if(ac>ao) out[i]=c;
+        merged=true; break;
+      }
+    }
+    if(!merged) out.push(c);
+  });
+  return out;
+}
+
+// Soldan sağa sırala
+function sortLR(codes){
+  return codes.slice().sort(function(a,b){
+    var ax=a.boundingBox?a.boundingBox.x:0;
+    var bx=b.boundingBox?b.boundingBox.x:0;
+    return ax-bx;
+  });
+}
 
 function initBD(){
   if(!window.BarcodeDetector) return;
@@ -1263,7 +1310,7 @@ function hideMultiSel(){
   if(bar){bar.style.display='none';bar.innerHTML='';}
 }
 
-function showMultiSel(codes){
+function showMultiSel(codes,snap){
   if(multiSelActive||!codes||codes.length<2) return;
   multiSelActive=true;
   if(raf){cancelAnimationFrame(raf);raf=null;}
@@ -1275,24 +1322,30 @@ function showMultiSel(codes){
   var ctx=mc.getContext('2d');
 
   var vw=vid.videoWidth||640, vh=vid.videoHeight||480;
-  var sc=Math.max(cw/vw,ch/vh);
-  var ox=(cw-vw*sc)/2, oy=(ch-vh*sc)/2;
-
-  // Dondurulmuş snapshot + dim
-  ctx.drawImage(vid,0,0,vw,vh,ox,oy,vw*sc,vh*sc);
+  var sc, ox, oy;
+  if(snap&&snap.canvas&&snap.canvas.width===cw){
+    // Önceden yakalanmış snapshot — koordinatları kullan
+    ctx.drawImage(snap.canvas,0,0);
+    sc=snap.sc; ox=snap.ox; oy=snap.oy;
+  } else {
+    // Fallback: mevcut frame
+    sc=Math.max(cw/vw,ch/vh);
+    ox=(cw-vw*sc)/2; oy=(ch-vh*sc)/2;
+    ctx.drawImage(vid,0,0,vw,vh,ox,oy,vw*sc,vh*sc);
+  }
   ctx.fillStyle='rgba(0,0,0,0.38)'; ctx.fillRect(0,0,cw,ch);
 
   multiCodes=codes;
   codes.forEach(function(bc,i){
     var col=MCOLORS[i%MCOLORS.length];
     var b=bc.boundingBox;
+    if(!b) return;
     var x=b.x*sc+ox, y=b.y*sc+oy, w=b.width*sc, h=b.height*sc;
-    // Glow çerçeve
     ctx.shadowColor=col; ctx.shadowBlur=14;
     ctx.strokeStyle=col; ctx.lineWidth=3.5;
     ctx.strokeRect(x,y,w,h);
     ctx.shadowBlur=0;
-    // Numara rozeti
+    // Numara rozeti — sol üst
     var bx=Math.max(4,x), by=y-30<4?y+h+2:y-30;
     ctx.fillStyle=col;
     ctx.beginPath();
@@ -1307,15 +1360,19 @@ function showMultiSel(codes){
 
   mc.style.display='block';
 
-  // Hint güncelle
   var hint=document.getElementById('camhint');
   if(hint){
     hint.style.display='block';
-    hint.textContent='👇 '+codes.length+' kod — aşağıdan seç';
+    hint.textContent='👇 '+codes.length+' kod bulundu — aşağıdan seç';
     hint.className='camhint warn';
   }
 
-  // ── Buton şeridi oluştur ──────────────────────────────────────────────
+  renderCamBar(codes);
+}
+
+function renderCamBar(codes){
+  multiSelActive=true; multiCodes=codes;
+  if(raf){cancelAnimationFrame(raf);raf=null;}
   var bar=document.getElementById('cam-multi-bar');
   var btns='<div class="cmb-row">';
   codes.forEach(function(bc,i){
@@ -1326,12 +1383,8 @@ function showMultiSel(codes){
       '<span class="cmb-type">'+fmt.badge+'</span>'+
     '</button>';
   });
-  btns+='</div>';
-  btns+='<button class="cmb-all" onclick="selAllMultiCam()">☰ Tümünü Sırayla Oku ('+codes.length+' Kod)</button>';
-  bar.innerHTML=btns;
-  bar.style.display='block';
-
-  // Bar'a kaydır
+  btns+='</div><button class="cmb-all" onclick="selAllMultiCam()">☰ Tümünü Sırayla Oku ('+codes.length+' Kod)</button>';
+  bar.innerHTML=btns; bar.style.display='block';
   setTimeout(function(){bar.scrollIntoView({behavior:'smooth',block:'nearest'});},120);
 }
 
@@ -1344,10 +1397,12 @@ function selMultiCam(idx){
 
 function selAllMultiCam(){
   var codes=multiCodes.slice();
+  // Kamerayı tamamen durdur — state temiz olsun
+  stopCam();
   hideMultiSel();
-  // Geçmişe ekle + numaralı yığın liste göster
+  // Kamera moduna özel: _multiImgCodes'u doldur (rawValue, text değil)
   _multiImgCodes=codes.map(function(bc){return {text:bc.rawValue};});
-  codes.forEach(function(c){histAdd(c.text);});
+  codes.forEach(function(bc){histAdd(bc.rawValue);}); // rawValue (text değil)
   document.getElementById('rsec').style.display='none';
   selectAllImageCodes();
 }
@@ -1358,52 +1413,43 @@ var vid=null, cnv=null, cx=null, mfReader=null;
 var smCnv=null, smCx=null;
 var SW=640, SH=360;
 var zbBusy=false, zxBusy=false, bdBusy=false;
-var camScanBuf={}, camDebounceTimer=null;
+var camScanBuf={}, camDebounceTimer=null, camLastSnap=null;
 var CAM_DEBOUNCE_MS=2200;
 
-function onCamCode(codes){
+function onCamCode(codes,snap){
   if(!scanning||multiSelActive) return;
   codes.forEach(function(bc){
     if(bc&&bc.rawValue) camScanBuf[bc.rawValue]=bc;
   });
+  // Son snapshot'ı güncelle (varsa)
+  if(snap&&snap.canvas) camLastSnap=snap;
   if(!camDebounceTimer){
     var h=document.getElementById('camhint');
     if(h){h.style.display='block';h.textContent='⏳ Taranıyor, lütfen bekleyin…';h.className='camhint';}
     camDebounceTimer=setTimeout(function(){
       camDebounceTimer=null;
-      if(!scanning||multiSelActive){camScanBuf={};return;}
+      if(!scanning||multiSelActive){camScanBuf={};camLastSnap=null;return;}
       var vals=Object.keys(camScanBuf);
       if(!vals.length) return;
-      if(vals.length===1){
-        var single=camScanBuf[vals[0]];
-        camScanBuf={};
-        camFound(single.rawValue);
+
+      // 1) rawValue bazlı topla
+      var raw=vals.map(function(v){return camScanBuf[v];});
+      // 2) IoU dedup (çakışan bbox → tek kod)
+      raw=iouDedup(raw);
+      // 3) Soldan sağa sırala
+      raw=sortLR(raw);
+      camScanBuf={};
+
+      if(raw.length===1){
+        var s=camLastSnap; camLastSnap=null;
+        camFound(raw[0].rawValue);
         return;
       }
-      // Birden fazla kod
-      var codesArr=vals.map(function(v){return camScanBuf[v];});
-      camScanBuf={};
-      var hasBbox=codesArr.some(function(c){return c&&c.boundingBox;});
-      if(hasBbox) showMultiSel(codesArr);
-      else{
-        // bbox yok — sadece buton şeridi
-        multiSelActive=true; multiCodes=codesArr;
-        if(raf){cancelAnimationFrame(raf);raf=null;}
-        document.getElementById('multi-canvas').style.display='none';
-        var bar=document.getElementById('cam-multi-bar');
-        var btns='<div class="cmb-row">';
-        codesArr.forEach(function(bc,i){
-          var col=MCOLORS[i%MCOLORS.length];
-          var fmt=detectFmt(bc.rawValue||'');
-          btns+='<button class="cmb-btn" style="border-color:'+col+';color:'+col+'" onclick="selMultiCam('+i+')">'+
-            '<span class="cmb-num">'+(i+1)+'</span><span class="cmb-type">'+fmt.badge+'</span></button>';
-        });
-        btns+='</div><button class="cmb-all" onclick="selAllMultiCam()">☰ Tümünü Sırayla Oku ('+codesArr.length+' Kod)</button>';
-        bar.innerHTML=btns; bar.style.display='block';
-        var h2=document.getElementById('camhint');
-        if(h2){h2.style.display='block';h2.textContent='👇 '+codesArr.length+' kod bulundu — seç';h2.className='camhint warn';}
-        setTimeout(function(){bar.scrollIntoView({behavior:'smooth',block:'nearest'});},120);
-      }
+      // Birden fazla kod — snapshot ile göster
+      var snap2=camLastSnap; camLastSnap=null;
+      var hasBbox=raw.some(function(c){return c&&c.boundingBox;});
+      if(hasBbox) showMultiSel(raw,snap2);
+      else renderCamBar(raw);
     },CAM_DEBOUNCE_MS);
   }
 }
@@ -1436,6 +1482,7 @@ function initCam(){
   // Tam ölçek zbar için ayrı canvas (jsQR'dan bağımsız)
   fullCnv=document.createElement('canvas');
   fullCx=fullCnv.getContext('2d',{willReadFrequently:true});
+  initSnapCanvas();
 }
 
 function allocBufs(){
@@ -1573,13 +1620,25 @@ function scanLoop(){
   if(barcodeDetector && !multiSelActive){
     if(!bdBusy){
       bdBusy=true;
+      // ── Snapshot ÖNCE yakala (sync) — async detect'ten önce ──────────
+      var wrap=document.querySelector('.vwrap');
+      var sw=wrap?wrap.clientWidth:320, sh=wrap?wrap.clientHeight:320;
+      snapCnv.width=sw; snapCnv.height=sh;
+      var vw0=vid.videoWidth||640, vh0=vid.videoHeight||480;
+      var sc0=Math.max(sw/vw0,sh/vh0);
+      var ox0=(sw-vw0*sc0)/2, oy0=(sh-vh0*sc0)/2;
+      snapCx.drawImage(vid,0,0,vw0,vh0,ox0,oy0,vw0*sc0,vh0*sc0);
+      var snapW=sw, snapH=sh; // boyutları kapat
       barcodeDetector.detect(vid).then(function(codes){
         bdBusy=false;
         if(!scanning||multiSelActive) return;
-        if(codes.length>0){ onCamCode(codes); return; }
+        if(codes.length>0){
+          onCamCode(codes,{canvas:snapCnv,w:snapW,h:snapH,sc:sc0,ox:ox0,oy:oy0});
+          return;
+        }
         // BD bulamadı — jsQR fallback (debounce üzerinden)
         var c=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-        if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}]);
+        if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}],null);
       }).catch(function(){bdBusy=false;});
     }
     frameCnt++;
@@ -1722,7 +1781,7 @@ function stopCam(){
   hideMultiSel();
   scanning=false;
   if(camDebounceTimer){clearTimeout(camDebounceTimer);camDebounceTimer=null;}
-  camScanBuf={};
+  camScanBuf={}; camLastSnap=null;
   if(raf){cancelAnimationFrame(raf);raf=null;}
   resetMFReader();
   if(torchOn&&torchTrack){
