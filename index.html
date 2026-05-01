@@ -307,7 +307,7 @@ textarea.minp::placeholder{color:var(--dm)}
 /* Kamera çoklu kod buton şeridi */
 #cam-multi-bar{padding:10px 12px;background:var(--s2);border-top:1.5px solid var(--bd);border-radius:0 0 10px 10px}
 .cmb-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.cmb-btn{flex:1;min-width:64px;max-width:120px;padding:10px 6px 8px;border:2.5px solid;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;background:transparent;text-align:center;transition:opacity .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cmb-btn{flex:1;min-width:64px;max-width:120px;padding:10px 6px 8px;border:2.5px solid;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;background:var(--s1);text-align:center;transition:opacity .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
 .cmb-btn:active{opacity:.7}
 .cmb-num{font-size:20px;font-weight:900;line-height:1}
 .cmb-type{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.85}
@@ -336,6 +336,14 @@ textarea.minp::placeholder{color:var(--dm)}
   cursor:pointer;padding:0 0 0 8px;color:var(--dm)}
 .dr-hist-fav.on{color:#f5c518}
 .dr-empty{padding:28px 18px;text-align:center;color:var(--dm);font-size:13px}
+/* Geçmiş/Favori liste footer */
+.dr-footer{padding:10px 14px;border-top:1px solid var(--bd);background:var(--s2);flex-shrink:0}
+.dr-footer-exp{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.dr-footer-lbl{font-size:11px;font-weight:700;color:var(--dm);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.dr-footer-exp button{background:var(--s3);border:1.5px solid var(--bd);color:var(--lb);border-radius:5px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s}
+.dr-footer-exp button:active{border-color:var(--ac);color:var(--ac)}
+.dr-footer-clr{width:100%;padding:9px;border:1.5px solid rgba(255,69,96,.3);border-radius:7px;background:rgba(255,69,96,.06);color:var(--er);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.dr-footer-clr:active{background:rgba(255,69,96,.15)}
 /* Drawer doğrulama paneli */
 #dr-val-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
 .dr-val-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;
@@ -450,7 +458,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v27</span>
+  <span class="hbadge">v28</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -1036,24 +1044,37 @@ function fmtDate(ts){
     +' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
 }
 
-function renderDrList(items,title){
+var _drListItems=[], _drListMode='hist';
+
+function renderDrList(items,title,mode){
+  _drListItems=items; _drListMode=mode||'hist';
   document.getElementById('dr-list-title').textContent=title;
   var body=document.getElementById('dr-list-body');
+  var html='';
   if(!items.length){
-    body.innerHTML='<div class="dr-empty">Henüz kayıt yok.</div>';
+    html='<div class="dr-empty">Henüz kayıt yok.</div>';
   } else {
-    var html='';
-    items.forEach(function(it){
-      var preview=it.v.substring(0,60).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    items.forEach(function(it,i){
+      var preview=it.v.substring(0,60).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
       var isFav=favHas(it.v);
-      html+='<div class="dr-hist-item" onclick="drLoadItem(\''+escAttr(it.v)+'\')">'
+      html+='<div class="dr-hist-item" onclick="drLoadItem('+i+')">'
         +'<div class="dr-hist-meta"><span>'+fmtDate(it.t)+'</span>'
-        +'<button class="dr-hist-fav'+(isFav?' on':'')+'" onclick="event.stopPropagation();drFavToggle(this,\''+escAttr(it.v)+'\')">'+(isFav?'★':'☆')+'</button></div>'
+        +'<button class="dr-hist-fav'+(isFav?' on':'')+'" onclick="event.stopPropagation();drFavToggleIdx(this,'+i+')">'+(isFav?'★':'☆')+'</button></div>'
         +'<div class="dr-hist-val">'+preview+(it.v.length>60?'…':'')+'</div>'
         +'</div>';
     });
-    body.innerHTML=html;
   }
+  html+='<div class="dr-footer">'
+    +'<div class="dr-footer-exp">'
+    +'<span class="dr-footer-lbl">Dışa Aktar:</span>'
+    +'<button onclick="exportDrList(\'txt\')">TXT</button>'
+    +'<button onclick="exportDrList(\'csv\')">CSV</button>'
+    +'<button onclick="exportDrList(\'json\')">JSON</button>'
+    +'<button onclick="exportDrList(\'html\')">HTML</button>'
+    +'</div>'
+    +'<button class="dr-footer-clr" onclick="clearDrList()">🗑 Listeyi Temizle</button>'
+    +'</div>';
+  body.innerHTML=html;
   var drList=document.getElementById('dr-list');
   drList.style.display='flex';
   drList.style.flexDirection='column';
@@ -1063,16 +1084,25 @@ function renderDrList(items,title){
   document.querySelector('.dr-menu').style.display='none';
 }
 
-function escAttr(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');}
+function escAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\n/g,' ');}
 
 function closeDrList(){
   document.getElementById('dr-list').style.display='none';
   document.querySelector('.dr-menu').style.display='block';
 }
 
-function drLoadItem(raw){
+function drLoadItem(idx){
+  var raw=typeof idx==='number'?_drListItems[idx].v:idx;
   closeDrawer();
   procQR(raw);
+}
+
+function drFavToggleIdx(btn,idx){
+  var raw=_drListItems[idx].v;
+  favToggle(raw);
+  var on=favHas(raw);
+  btn.textContent=on?'★':'☆';
+  btn.className='dr-hist-fav'+(on?' on':'');
 }
 
 function drFavToggle(btn,raw){
@@ -1080,6 +1110,53 @@ function drFavToggle(btn,raw){
   var on=favHas(raw);
   btn.textContent=on?'★':'☆';
   btn.className='dr-hist-fav'+(on?' on':'');
+}
+
+function clearDrList(){
+  var lbl=_drListMode==='fav'?'Favoriler':'Geçmiş';
+  if(!confirm(lbl+' tamamen silinsin mi?')) return;
+  if(_drListMode==='fav') favSave([]);
+  else histSave([]);
+  showToast(lbl+' temizlendi.');
+  closeDrList();
+  closeDrawer();
+}
+
+function exportDrList(fmt){
+  var items=_drListItems;
+  if(!items.length){showToast('Dışa aktarılacak kayıt yok.');return;}
+  var lbl=_drListMode==='fav'?'favoriler':'gecmis';
+  var content,mime,ext;
+  if(fmt==='txt'){
+    content=items.map(function(it){return fmtDate(it.t)+'\n'+it.v;}).join('\n\n---\n\n');
+    mime='text/plain';ext='txt';
+  } else if(fmt==='csv'){
+    content='Tarih,İçerik\n'+items.map(function(it){
+      return '"'+fmtDate(it.t)+'","'+it.v.replace(/"/g,'""')+'"';
+    }).join('\n');
+    mime='text/csv;charset=utf-8';ext='csv';
+  } else if(fmt==='json'){
+    content=JSON.stringify(items.map(function(it){return {tarih:fmtDate(it.t),icerik:it.v};}),null,2);
+    mime='application/json';ext='json';
+  } else {
+    content='<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Karekod '+lbl+'</title>'
+      +'<style>body{font-family:sans-serif;padding:16px}table{border-collapse:collapse;width:100%}'
+      +'th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#eee}'
+      +'td:first-child{white-space:nowrap}td:last-child{font-family:monospace;font-size:12px;word-break:break-all}'
+      +'</style></head><body><h2>Karekod Doğrulayıcı — '+lbl+'</h2>'
+      +'<table><tr><th>Tarih</th><th>İçerik</th></tr>'
+      +items.map(function(it){return '<tr><td>'+fmtDate(it.t)+'</td><td>'+it.v.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</td></tr>';}).join('')
+      +'</table></body></html>';
+    mime='text/html;charset=utf-8';ext='html';
+  }
+  var bom=fmt==='csv'?'\uFEFF':'';
+  var blob=new Blob([bom+content],{type:mime});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='karekod-'+lbl+'-'+new Date().toISOString().slice(0,10)+'.'+ext;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('✓ '+ext.toUpperCase()+' olarak indirildi.');
 }
 
 // ── DRAWER ────────────────────────────────────────────────────────────────────
@@ -1159,8 +1236,8 @@ function drAction(a){
   }
   if(a==='copy'){raCopy();closeDrawer();return;}
   if(a==='share'){raShare();closeDrawer();return;}
-  if(a==='hist'){renderDrList(histLoad(),'🕐 Geçmiş');return;}
-  if(a==='favs'){renderDrList(favLoad(),'⭐ Favoriler');return;}
+  if(a==='hist'){renderDrList(histLoad(),'🕐 Geçmiş','hist');return;}
+  if(a==='favs'){renderDrList(favLoad(),'⭐ Favoriler','fav');return;}
   if(a==='clrhist'){
     if(confirm('Geçmiş silinsin mi?')){histSave([]);showToast('Geçmiş temizlendi.');}
     closeDrawer();return;
@@ -1281,6 +1358,55 @@ var vid=null, cnv=null, cx=null, mfReader=null;
 var smCnv=null, smCx=null;
 var SW=640, SH=360;
 var zbBusy=false, zxBusy=false, bdBusy=false;
+var camScanBuf={}, camDebounceTimer=null;
+var CAM_DEBOUNCE_MS=2200;
+
+function onCamCode(codes){
+  if(!scanning||multiSelActive) return;
+  codes.forEach(function(bc){
+    if(bc&&bc.rawValue) camScanBuf[bc.rawValue]=bc;
+  });
+  if(!camDebounceTimer){
+    var h=document.getElementById('camhint');
+    if(h){h.style.display='block';h.textContent='⏳ Taranıyor, lütfen bekleyin…';h.className='camhint';}
+    camDebounceTimer=setTimeout(function(){
+      camDebounceTimer=null;
+      if(!scanning||multiSelActive){camScanBuf={};return;}
+      var vals=Object.keys(camScanBuf);
+      if(!vals.length) return;
+      if(vals.length===1){
+        var single=camScanBuf[vals[0]];
+        camScanBuf={};
+        camFound(single.rawValue);
+        return;
+      }
+      // Birden fazla kod
+      var codesArr=vals.map(function(v){return camScanBuf[v];});
+      camScanBuf={};
+      var hasBbox=codesArr.some(function(c){return c&&c.boundingBox;});
+      if(hasBbox) showMultiSel(codesArr);
+      else{
+        // bbox yok — sadece buton şeridi
+        multiSelActive=true; multiCodes=codesArr;
+        if(raf){cancelAnimationFrame(raf);raf=null;}
+        document.getElementById('multi-canvas').style.display='none';
+        var bar=document.getElementById('cam-multi-bar');
+        var btns='<div class="cmb-row">';
+        codesArr.forEach(function(bc,i){
+          var col=MCOLORS[i%MCOLORS.length];
+          var fmt=detectFmt(bc.rawValue||'');
+          btns+='<button class="cmb-btn" style="border-color:'+col+';color:'+col+'" onclick="selMultiCam('+i+')">'+
+            '<span class="cmb-num">'+(i+1)+'</span><span class="cmb-type">'+fmt.badge+'</span></button>';
+        });
+        btns+='</div><button class="cmb-all" onclick="selAllMultiCam()">☰ Tümünü Sırayla Oku ('+codesArr.length+' Kod)</button>';
+        bar.innerHTML=btns; bar.style.display='block';
+        var h2=document.getElementById('camhint');
+        if(h2){h2.style.display='block';h2.textContent='👇 '+codesArr.length+' kod bulundu — seç';h2.className='camhint warn';}
+        setTimeout(function(){bar.scrollIntoView({behavior:'smooth',block:'nearest'});},120);
+      }
+    },CAM_DEBOUNCE_MS);
+  }
+}
 var prevBuf=null, motionVal=0;
 var CAM_HARD_RESET=300;
 var torchOn=false, torchTrack=null;
@@ -1360,6 +1486,7 @@ function startCam(){
     var h=document.getElementById('camhint');
     if(h){h.style.display='block';h.textContent='🔍 QR\'ı çerçeve içine al';h.className='camhint';}
     scanning=true; frameCnt=0; hardFrames=0;
+    camScanBuf={}; if(camDebounceTimer){clearTimeout(camDebounceTimer);camDebounceTimer=null;}
     allocBufs(); // hemen tahsis et, metadata gelmeden önce başla
     scanLoop();
   }).catch(function(e){
@@ -1449,11 +1576,10 @@ function scanLoop(){
       barcodeDetector.detect(vid).then(function(codes){
         bdBusy=false;
         if(!scanning||multiSelActive) return;
-        if(codes.length>=2){showMultiSel(codes);return;}
-        if(codes.length===1){camFound(codes[0].rawValue);return;}
-        // BD'nin bulamadığı durumda zaten hesaplanmış otBuf ile jsQR çalıştır
+        if(codes.length>0){ onCamCode(codes); return; }
+        // BD bulamadı — jsQR fallback (debounce üzerinden)
         var c=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-        if(c&&c.data) camFound(c.data);
+        if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}]);
       }).catch(function(){bdBusy=false;});
     }
     frameCnt++;
@@ -1463,15 +1589,15 @@ function scanLoop(){
 
   // ── Motor 1: jsQR ham ─────────────────────────────────────────────────
   var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c&&c.data){camFound(c.data);return;}
+  if(c&&c.data){onCamCode([{rawValue:c.data,boundingBox:null}]);return;}
 
   // ── Motor 2: jsQR Otsu ────────────────────────────────────────────────
   var c2=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c2&&c2.data){camFound(c2.data);return;}
+  if(c2&&c2.data){onCamCode([{rawValue:c2.data,boundingBox:null}]);return;}
 
   // ── Motor 3: jsQR BlurOtsu — ekran moire için ─────────────────────────
   var c3=jsQR(boBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c3&&c3.data){camFound(c3.data);return;}
+  if(c3&&c3.data){onCamCode([{rawValue:c3.data,boundingBox:null}]);return;}
 
   // ── Motor 4: zbar TAM ÇÖZÜNÜRLÜK — her kare, busy flag ──────────────────
   // Kritik: zbar yarı ölçekten değil tam video frame'den çalışır
@@ -1482,7 +1608,7 @@ function scanLoop(){
     fullCx.drawImage(vid,0,0,vw2,vh2);
     var fid=fullCx.getImageData(0,0,vw2,vh2);
     zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(fid.data),vw2,vh2))
-    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)onCamCode([{rawValue:t,boundingBox:null}]);})
     .catch(function(){zbBusy=false;});
   }
 
@@ -1490,7 +1616,7 @@ function scanLoop(){
   if(frameCnt%2===0&&!zbBusy&&typeof zbarWasm!=='undefined'){
     zbBusy=true;
     zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(boBuf),SW,SH))
-    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)onCamCode([{rawValue:t,boundingBox:null}]);})
     .catch(function(){zbBusy=false;});
   }
 
@@ -1512,7 +1638,7 @@ function scanLoop(){
     var cropId=cropCtx.getImageData(0,0,cr.w,cr.h);
     zbBusy=true;
     zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(cropId.data),cr.w,cr.h))
-    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+    .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)onCamCode([{rawValue:t,boundingBox:null}]);})
     .catch(function(){zbBusy=false;});
   }
 
@@ -1534,11 +1660,11 @@ function scanLoop(){
       laBuf[i]=laBuf[i+1]=laBuf[i+2]=vv; laBuf[i+3]=255;
     }
     var c7=jsQR(laBuf,SW,SH,{inversionAttempts:'dontInvert'});
-    if(c7&&c7.data){camFound(c7.data);}
+    if(c7&&c7.data){onCamCode([{rawValue:c7.data,boundingBox:null}]);}
     else{
       zbBusy=true;
       zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(laBuf),SW,SH))
-      .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)camFound(t);})
+      .then(function(r){zbBusy=false;var t=zbTxt(r);if(t)onCamCode([{rawValue:t,boundingBox:null}]);})
       .catch(function(){zbBusy=false;});
     }
   }
@@ -1556,7 +1682,7 @@ function scanLoop(){
       ti.onload=function(){
         if(!scanning){zxBusy=false;ti.src='';return;}
         r.decodeFromImageElement(ti).then(function(rs){
-          zxBusy=false;if(rs&&rs.getText())camFound(rs.getText());
+          zxBusy=false;if(rs&&rs.getText())onCamCode([{rawValue:rs.getText(),boundingBox:null}]);
         }).catch(function(){zxBusy=false;});
         ti.src='';
       };
@@ -1595,6 +1721,8 @@ function calcMotion(data,w,h){
 function stopCam(){
   hideMultiSel();
   scanning=false;
+  if(camDebounceTimer){clearTimeout(camDebounceTimer);camDebounceTimer=null;}
+  camScanBuf={};
   if(raf){cancelAnimationFrame(raf);raf=null;}
   resetMFReader();
   if(torchOn&&torchTrack){
