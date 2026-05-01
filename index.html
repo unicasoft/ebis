@@ -293,7 +293,7 @@ textarea.minp::placeholder{color:var(--dm)}
   font-size:13px;font-weight:600;cursor:pointer;padding:2px 0}
 #dr-list-title{font-size:13px;font-weight:700;color:var(--tx)}
 #dr-list{flex:1;min-height:0;overflow:hidden}
-#dr-list-body{overflow-y:auto;flex:1;min-height:0;padding:6px 0;-webkit-overflow-scrolling:touch}
+#dr-list-body{overflow-y:auto;flex:1;min-height:0;padding:6px 0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
 /* Resim çoklu kod seçim listesi */
 #multi-img-sel{display:none;background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden}
 .mic-hd{padding:9px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--lb);background:var(--s2);border-bottom:1.5px solid var(--bd)}
@@ -304,6 +304,19 @@ textarea.minp::placeholder{color:var(--dm)}
 .mic-info{flex:1;min-width:0}
 .mic-badge{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
 .mic-val{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx);word-break:break-all;line-height:1.4}
+/* Numaralı yığın sonuç listesi */
+#all-codes-sec{padding-bottom:12px}
+.ac-card{background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.ac-head{display:flex;align-items:center;gap:9px;padding:8px 12px;background:var(--s2);border-bottom:1.5px solid var(--bd)}
+.ac-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.ac-type{font-size:12px;font-weight:700;color:var(--lb);flex:1}
+.ac-sel{border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(59,158,255,.15);color:var(--ac);font-family:'Inter',sans-serif}
+.ac-raw{padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dm);word-break:break-all;line-height:1.6;border-bottom:1px solid var(--bd)}
+.ac-fields{padding:0}
+.ac-row{display:grid;grid-template-columns:38% 1fr;padding:6px 12px;border-bottom:1px solid var(--bd);font-size:12px;align-items:start;gap:4px}
+.ac-row:last-child{border-bottom:none}
+.ac-fn{color:var(--lb);font-weight:600}
+.ac-fv{color:var(--vl);font-weight:700;word-break:break-all}
 .dr-hist-item{padding:11px 16px;border-bottom:1px solid var(--bd);cursor:pointer}
 .dr-hist-item:active{background:var(--s2)}
 .dr-hist-meta{font-size:11px;color:var(--dm);margin-bottom:4px;
@@ -429,7 +442,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v25</span>
+  <span class="hbadge">v26</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -558,6 +571,8 @@ canvas{display:none}
     </div>
     <button class="btnrs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
   </div>
+  <!-- TÜMÜ SEÇ: numaralı yığın liste -->
+  <div id="all-codes-sec" style="display:none"></div>
 </main>
 
 <footer>
@@ -1030,8 +1045,12 @@ function renderDrList(items,title){
     });
     body.innerHTML=html;
   }
-  document.getElementById('dr-list').style.display='flex';
-  document.getElementById('dr-list').style.flexDirection='column';
+  var drList=document.getElementById('dr-list');
+  drList.style.display='flex';
+  drList.style.flexDirection='column';
+  drList.style.flex='1';
+  drList.style.minHeight='0';
+  drList.style.overflow='hidden';
   document.querySelector('.dr-menu').style.display='none';
 }
 
@@ -1056,6 +1075,7 @@ function drFavToggle(btn,raw){
 
 // ── DRAWER ────────────────────────────────────────────────────────────────────
 function openDrawer(){
+  document.body.style.overflow='hidden';
   if(scanning&&raf){cancelAnimationFrame(raf);raf=null;}
   var dr=document.getElementById('drawer');
   dr.classList.add('open');
@@ -1091,6 +1111,7 @@ function openDrawer(){
   dr.addEventListener('touchend',onTE);
 }
 function closeDrawer(){
+  document.body.style.overflow='';
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
   // Kamera açıksa RAF'ı yeniden başlat
@@ -1242,7 +1263,7 @@ var stream=null, scanning=false, raf=null, frameCnt=0, hardFrames=0;
 var vid=null, cnv=null, cx=null, mfReader=null;
 var smCnv=null, smCx=null;
 var SW=640, SH=360;
-var zbBusy=false, zxBusy=false;
+var zbBusy=false, zxBusy=false, bdBusy=false;
 var prevBuf=null, motionVal=0;
 var CAM_HARD_RESET=300;
 var torchOn=false, torchTrack=null;
@@ -1259,7 +1280,7 @@ function getMFReader(){
 }
 function resetMFReader(){
   if(mfReader){try{mfReader.reset();}catch(e){} mfReader=null;}
-  zbBusy=false; zxBusy=false;
+  zbBusy=false; zxBusy=false; bdBusy=false;
 }
 
 function initCam(){
@@ -1402,6 +1423,27 @@ function scanLoop(){
     boBuf[i]=boBuf[i+1]=boBuf[i+2]=bg; boBuf[i+3]=255;
   }
 
+  // ── BarcodeDetector PRIMARY — çoklu kod bulma, jsQR/zbar'dan önce ─────
+  // BD varsa: tek/çoklu kodu bulur, jsQR/zbar'a gerek yok.
+  // BD yoksa: aşağıdaki motorlar devreye girer.
+  if(barcodeDetector && !multiSelActive){
+    if(!bdBusy){
+      bdBusy=true;
+      barcodeDetector.detect(vid).then(function(codes){
+        bdBusy=false;
+        if(!scanning||multiSelActive) return;
+        if(codes.length>=2){showMultiSel(codes);return;}
+        if(codes.length===1){camFound(codes[0].rawValue);return;}
+        // BD'nin bulamadığı durumda zaten hesaplanmış otBuf ile jsQR çalıştır
+        var c=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
+        if(c&&c.data) camFound(c.data);
+      }).catch(function(){bdBusy=false;});
+    }
+    frameCnt++;
+    raf=requestAnimationFrame(scanLoop);
+    return; // BD aktifken jsQR/zbar motorlarına gerek yok
+  }
+
   // ── Motor 1: jsQR ham ─────────────────────────────────────────────────
   var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
   if(c&&c.data){camFound(c.data);return;}
@@ -1503,15 +1545,6 @@ function scanLoop(){
       };
       ti.src=url;
     } else { zxBusy=false; }
-  }
-
-  // BarcodeDetector — çoklu kod tespiti (her 8 karede bir)
-  if(frameCnt%8===0&&barcodeDetector&&!multiSelActive){
-    barcodeDetector.detect(vid).then(function(codes){
-      if(!scanning||multiSelActive) return;
-      if(codes.length===1) camFound(codes[0].rawValue);
-      else if(codes.length>1) showMultiSel(codes);
-    }).catch(function(){});
   }
 
   frameCnt++;
@@ -1665,6 +1698,9 @@ function findAllCodesMultiRegion(img,cb){
 var _multiImgCodes=[];
 function showImageCodeSelection(codes,imgEl){
   _multiImgCodes=codes;
+  // Önceki taramadan kalan sonucu gizle
+  document.getElementById('rsec').style.display='none';
+  document.getElementById('all-codes-sec').style.display='none';
   var sel=document.getElementById('multi-img-sel');
   var html='<div class="mic-hd">📋 '+codes.length+' KOD BULUNDU — SEÇ VEYA TÜMÜNÜ OKU</div>';
 
@@ -1719,16 +1755,50 @@ function selectImageCode(idx){
 }
 
 function selectAllImageCodes(){
-  // İlk kodu işle, sonuç bölümüne geç — diğerleri aşağıda accordion
   if(!_multiImgCodes.length) return;
   document.getElementById('multi-img-sel').style.display='none';
-  // Her birini geçmişe ekle ve ilkini göster
+  document.getElementById('rsec').style.display='none';
   _multiImgCodes.forEach(function(c){histAdd(c.text);});
-  procQR(_multiImgCodes[0].text);
-  // Kalan kodlar için toast
-  if(_multiImgCodes.length>1){
-    showToast(_multiImgCodes.length+' kod geçmişe eklendi. Menü > Geçmiş\'ten ulaşabilirsiniz.');
-  }
+  var sec=document.getElementById('all-codes-sec');
+  var html='';
+  _multiImgCodes.forEach(function(code,i){
+    var col=MCOLORS[i%MCOLORS.length];
+    var res=detectAndValidate(code.text);
+    var di=res.di||{};
+    var typeName=di.n||(detectFmt(code.text).badge);
+    // Ham içerik özeti
+    var rawPrev=code.text.length>120?code.text.substring(0,120)+'…':code.text;
+    // Alan listesi — EBİS/GİB varsa ilk 6 alan, yoksa sadece raw
+    var fieldsHtml='';
+    if(res.fmt!=='unknown'&&res.fields&&res.fields.length){
+      var shown=res.fields.slice(0,6);
+      fieldsHtml='<div class="ac-fields">';
+      shown.forEach(function(f){
+        var v=res.fv[f.k];
+        var empty=(!v||String(v).trim()==='');
+        var disp=empty?'—':String(v);
+        if(f.k==='dt'&&v&&/^\d{12}$/.test(v))
+          disp=v.slice(6,8)+'.'+v.slice(4,6)+'.'+v.slice(0,4)+' '+v.slice(8,10)+':'+v.slice(10,12);
+        fieldsHtml+='<div class="ac-row"><div class="ac-fn">'+f.n+'</div><div class="ac-fv'+(empty?' fval empty':'')+'">'+disp.replace(/</g,'&lt;')+'</div></div>';
+      });
+      if(res.fields.length>6) fieldsHtml+='<div class="ac-row" style="color:var(--dm);font-size:11px"><div></div><div>+'+(res.fields.length-6)+' alan daha…</div></div>';
+      fieldsHtml+='</div>';
+    } else {
+      fieldsHtml='<div class="ac-raw">'+rawPrev.replace(/</g,'&lt;')+'</div>';
+    }
+    html+='<div class="ac-card">'+
+      '<div class="ac-head">'+
+        '<div class="ac-num" style="background:'+col+'">'+String(i+1)+'</div>'+
+        '<div class="ac-type">'+typeName+'</div>'+
+        '<button class="ac-sel" onclick="selectImageCode('+i+')">Tam Detay →</button>'+
+      '</div>'+
+      fieldsHtml+
+    '</div>';
+  });
+  html+='<button class="btnrs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>';
+  sec.innerHTML=html;
+  sec.style.display='block';
+  setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'start'});},80);
 }
 
 // ── GÖRÜNTÜ: Çok bölgeli + döndürme destekli decode ─────────────────────────
@@ -1882,6 +1952,8 @@ function clrImg(){
   document.getElementById('flinput').value='';
   document.getElementById('multi-img-sel').style.display='none';
   document.getElementById('multi-img-sel').innerHTML='';
+  document.getElementById('all-codes-sec').style.display='none';
+  document.getElementById('all-codes-sec').innerHTML='';
   _multiImgCodes=[];
   document.getElementById('rsec').style.display='none';
 }
@@ -1924,6 +1996,8 @@ function toggleFavCurrent(){
 }
 function rescan(){
   document.getElementById('rsec').style.display='none';
+  document.getElementById('all-codes-sec').style.display='none';
+  document.getElementById('all-codes-sec').innerHTML='';
   window.scrollTo({top:0,behavior:'smooth'});
   if(document.getElementById('p-cam').style.display!=='none'){
     setTimeout(startCam,300);
