@@ -428,6 +428,25 @@ footer a:hover{text-decoration:underline}
   padding:5px 13px;border-radius:20px;white-space:nowrap;pointer-events:none;
   border:1px solid rgba(255,255,255,.18);letter-spacing:.3px;z-index:10}
 .camhint.warn{border-color:rgba(255,180,0,.5);color:#ffb700}
+/* Tarama Modu Araç Çubuğu */
+#scan-mode-bar{display:none;padding:7px 10px;background:var(--s2);border-bottom:1px solid var(--bd);gap:5px;flex-wrap:nowrap}
+#scan-mode-bar.vis{display:flex}
+.sm-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border:1.5px solid var(--bd);border-radius:9px;background:var(--s1);cursor:pointer;font-family:'Inter',sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--dm);transition:.15s;min-width:0}
+.sm-btn svg{width:22px;height:22px;opacity:.55}
+.sm-btn.on{border-color:var(--ac);background:rgba(59,158,255,.12);color:var(--ac)}
+.sm-btn.on svg{opacity:1}
+.sm-btn:active{opacity:.7}
+/* ROI Overlay */
+#roi-overlay{position:absolute;inset:0;z-index:11;pointer-events:none;display:none}
+#roi-box{position:absolute;box-shadow:0 0 0 9999px rgba(0,0,0,0.52);border:2.5px solid rgba(255,255,255,0.82);border-radius:8px;transition:all .25s}
+#roi-overlay.bar #roi-box{border-radius:5px}
+/* ROI köşe süsleri */
+#roi-box::before,#roi-box::after,#roi-box .rc1,#roi-box .rc2{
+  content:'';position:absolute;width:16px;height:16px;border-color:var(--ac);border-style:solid}
+#roi-box::before{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+#roi-box::after{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+#roi-box .rc1{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+#roi-box .rc2{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
 canvas{display:none}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 </style>
@@ -458,7 +477,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v29</span>
+  <span class="hbadge">v30</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -501,16 +520,32 @@ canvas{display:none}
     </div>
   </div>
 
-  <!-- KAMERA PANELİ -->
   <div id="p-cam">
     <div class="card">
       <div class="card-h"><div class="pdot" id="cdot"></div><span id="cstat">Kamera Bekleniyor</span><button id="btorch" onclick="toggleTorch()" title="El Feneri">🔦</button></div>
+      <!-- Tarama Modu Araç Çubuğu -->
+      <div id="scan-mode-bar">
+        <button class="sm-btn on" id="sm-qr" onclick="setScanMode('qr')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="14" y="14" width="3" height="1.5" fill="currentColor" stroke="none"/><rect x="14" y="17" width="7" height="1.5" fill="currentColor" stroke="none"/><rect x="19.5" y="14" width="1.5" height="7" fill="currentColor" stroke="none"/></svg>
+          QR Kodu
+        </button>
+        <button class="sm-btn" id="sm-bar" onclick="setScanMode('bar')">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2" y="4" width="1.5" height="16"/><rect x="5" y="4" width="3" height="16"/><rect x="10" y="4" width="1.5" height="16"/><rect x="13" y="4" width="1" height="16"/><rect x="16" y="4" width="3" height="16"/><rect x="21" y="4" width="1.5" height="16"/></svg>
+          Çubuk Barkod
+        </button>
+        <button class="sm-btn" id="sm-full" onclick="setScanMode('full')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          Tam Ekran
+        </button>
+      </div>
       <div class="vwrap">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="qrc"></canvas>
-        <div class="corners"><div class="cbox"><span></span>
+        <div class="corners" id="corners-wrap"><div class="cbox" id="cam-cbox"><span></span>
           <div class="sbar" id="sbar" style="display:none"></div>
         </div></div>
+        <!-- ROI Overlay -->
+        <div id="roi-overlay"><div id="roi-box"><span class="rc1"></span><span class="rc2"></span></div></div>
         <div class="cidle" id="cidle">
           <div class="cidle-i">📷</div>
           <div class="cidle-t">Kamera Kapalı</div>
@@ -1244,6 +1279,57 @@ function drAction(a){
   }
 }
 
+// ── TARAMA MODU & ROI ───────────────────────────────────────────────────────
+var camMode='qr'; // 'qr' | 'bar' | 'full'
+var previewCnv=null, previewCx=null; // Görüntü arka planı (display-size)
+var roiCnv=null, roiCx=null;         // ROI kırpma canvas
+
+function getRoi(w,h){
+  // smCnv (640×360) koordinatlarında ROI döner, full modda null
+  if(camMode==='full') return null;
+  if(camMode==='qr'){
+    var s=Math.min(w,h)*0.72;
+    return {x:Math.round((w-s)/2),y:Math.round((h-s)/2),w:Math.round(s),h:Math.round(s)};
+  }
+  // bar: geniş dikdörtgen
+  var bw=Math.round(w*0.90), bh=Math.round(h*0.34);
+  return {x:Math.round((w-bw)/2),y:Math.round((h-bh)/2),w:bw,h:bh};
+}
+
+function setScanMode(m){
+  camMode=m;
+  ['qr','bar','full'].forEach(function(n){
+    var b=document.getElementById('sm-'+n);
+    if(b) b.className='sm-btn'+(n===m?' on':'');
+  });
+  // corners klasik cbox yalnız full modda gizlenir
+  var cb=document.getElementById('cam-cbox');
+  if(cb) cb.style.display=(m==='full'?'none':'');
+  updateRoiOverlay();
+}
+
+function updateRoiOverlay(){
+  var ov=document.getElementById('roi-overlay');
+  var box=document.getElementById('roi-box');
+  if(!ov||!box) return;
+  if(camMode==='full'){ov.style.display='none';return;}
+  var wrap=document.querySelector('.vwrap');
+  if(!wrap){ov.style.display='none';return;}
+  var dw=wrap.clientWidth, dh=wrap.clientHeight;
+  // ROI in smCnv (640×360) → scale to display
+  var roi=getRoi(SW,SH);
+  if(!roi){ov.style.display='none';return;}
+  var sc=Math.max(dw/SW,dh/SH);
+  var ox=(dw-SW*sc)/2, oy=(dh-SH*sc)/2;
+  var rx=roi.x*sc+ox, ry=roi.y*sc+oy, rw=roi.w*sc, rh=roi.h*sc;
+  box.style.left=Math.round(rx)+'px';
+  box.style.top=Math.round(ry)+'px';
+  box.style.width=Math.round(rw)+'px';
+  box.style.height=Math.round(rh)+'px';
+  ov.className='roi-overlay'+(camMode==='bar'?' bar':'');
+  ov.style.display='block';
+}
+
 // ── ÇOKLU BARKOD SEÇİM ──────────────────────────────────────────────────────
 var barcodeDetector=null, multiSelActive=false, multiCodes=[];
 var MCOLORS=['#3b9eff','#22dd88','#ffb830','#ff4560','#c084fc'];
@@ -1324,14 +1410,14 @@ function showMultiSel(codes,snap){
   var vw=vid.videoWidth||640, vh=vid.videoHeight||480;
   var sc, ox, oy;
   if(snap&&snap.canvas&&snap.canvas.width===cw){
-    // Önceden yakalanmış snapshot — koordinatları kullan
+    // Frame-sync preview canvas — smCnv koordinat sistemi
     ctx.drawImage(snap.canvas,0,0);
     sc=snap.sc; ox=snap.ox; oy=snap.oy;
   } else {
-    // Fallback: mevcut frame
-    sc=Math.max(cw/vw,ch/vh);
-    ox=(cw-vw*sc)/2; oy=(ch-vh*sc)/2;
-    ctx.drawImage(vid,0,0,vw,vh,ox,oy,vw*sc,vh*sc);
+    // Fallback: mevcut video frame
+    sc=Math.max(cw/SW,ch/SH);
+    ox=(cw-SW*sc)/2; oy=(ch-SH*sc)/2;
+    ctx.drawImage(smCnv,0,0,SW,SH,ox,oy,SW*sc,SH*sc);
   }
   ctx.fillStyle='rgba(0,0,0,0.38)'; ctx.fillRect(0,0,cw,ch);
 
@@ -1483,6 +1569,13 @@ function initCam(){
   fullCnv=document.createElement('canvas');
   fullCx=fullCnv.getContext('2d',{willReadFrequently:true});
   initSnapCanvas();
+  previewCnv=document.createElement('canvas');
+  previewCx=previewCnv.getContext('2d',{willReadFrequently:true});
+  roiCnv=document.createElement('canvas');
+  roiCx=roiCnv.getContext('2d',{willReadFrequently:true});
+  // Toolbar'ı göster
+  var smb=document.getElementById('scan-mode-bar');
+  if(smb) smb.classList.add('vis');
 }
 
 function allocBufs(){
@@ -1534,6 +1627,7 @@ function startCam(){
     if(h){h.style.display='block';h.textContent='🔍 QR\'ı çerçeve içine al';h.className='camhint';}
     scanning=true; frameCnt=0; hardFrames=0;
     camScanBuf={}; if(camDebounceTimer){clearTimeout(camDebounceTimer);camDebounceTimer=null;}
+    setTimeout(updateRoiOverlay,100);
     allocBufs(); // hemen tahsis et, metadata gelmeden önce başla
     scanLoop();
   }).catch(function(e){
@@ -1620,25 +1714,55 @@ function scanLoop(){
   if(barcodeDetector && !multiSelActive){
     if(!bdBusy){
       bdBusy=true;
-      // ── Snapshot ÖNCE yakala (sync) — async detect'ten önce ──────────
-      var wrap=document.querySelector('.vwrap');
-      var sw=wrap?wrap.clientWidth:320, sh=wrap?wrap.clientHeight:320;
-      snapCnv.width=sw; snapCnv.height=sh;
-      var vw0=vid.videoWidth||640, vh0=vid.videoHeight||480;
-      var sc0=Math.max(sw/vw0,sh/vh0);
-      var ox0=(sw-vw0*sc0)/2, oy0=(sh-vh0*sc0)/2;
-      snapCx.drawImage(vid,0,0,vw0,vh0,ox0,oy0,vw0*sc0,vh0*sc0);
-      var snapW=sw, snapH=sh; // boyutları kapat
-      barcodeDetector.detect(vid).then(function(codes){
+      // ── Preview canvas — display boyutunda, vid'den sync çekil ──────────
+      var wrap2=document.querySelector('.vwrap');
+      var pvW=wrap2?wrap2.clientWidth:320, pvH=wrap2?wrap2.clientHeight:320;
+      previewCnv.width=pvW; previewCnv.height=pvH;
+      var sc2=Math.max(pvW/SW,pvH/SH);
+      var ox2=(pvW-SW*sc2)/2, oy2=(pvH-SH*sc2)/2;
+      previewCx.drawImage(smCnv,0,0,SW,SH,ox2,oy2,SW*sc2,SH*sc2);
+      var pvSnap={canvas:previewCnv,sc:sc2,ox:ox2,oy:oy2};
+
+      // ── Detect source: ROI modda kırpılmış, tam modda smCnv ─────────────
+      var roi=getRoi(SW,SH);
+      var detectSrc;
+      if(roi){
+        roiCnv.width=roi.w; roiCnv.height=roi.h;
+        roiCx.drawImage(smCnv,roi.x,roi.y,roi.w,roi.h,0,0,roi.w,roi.h);
+        detectSrc=roiCnv;
+      } else {
+        detectSrc=smCnv;
+      }
+
+      barcodeDetector.detect(detectSrc).then(function(codes){
         bdBusy=false;
         if(!scanning||multiSelActive) return;
-        if(codes.length>0){
-          onCamCode(codes,{canvas:snapCnv,w:snapW,h:snapH,sc:sc0,ox:ox0,oy:oy0});
-          return;
+        var adjusted=codes;
+        if(roi&&codes.length){
+          // bbox koordinatlarını ROI'den smCnv'ye çevir
+          adjusted=codes.map(function(c){
+            var b=c.boundingBox;
+            return {rawValue:c.rawValue,format:c.format,
+              boundingBox:b?{x:b.x+roi.x,y:b.y+roi.y,width:b.width,height:b.height}:null};
+          });
         }
-        // BD bulamadı — jsQR fallback (debounce üzerinden)
-        var c=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-        if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}],null);
+        if(adjusted.length>0){onCamCode(adjusted,pvSnap);return;}
+        // BD bulamadı — jsQR ROI fallback
+        var fbData, fbW, fbH;
+        if(roi){
+          var rid=roiCx.getImageData(0,0,roiCnv.width,roiCnv.height);
+          fbData=rid.data; fbW=roiCnv.width; fbH=roiCnv.height;
+        } else {
+          fbData=otBuf; fbW=SW; fbH=SH;
+        }
+        var c=jsQR(fbData,fbW,fbH,{inversionAttempts:'attemptBoth'});
+        if(c&&c.data){
+          var bx=roi?c.location.topLeftCorner.x+roi.x:null;
+          var by=roi?c.location.topLeftCorner.y+roi.y:null;
+          var bw=roi?c.location.topRightCorner.x-c.location.topLeftCorner.x:null;
+          var bh=roi?c.location.bottomLeftCorner.y-c.location.topLeftCorner.y:null;
+          onCamCode([{rawValue:c.data,boundingBox:bx!=null?{x:bx,y:by,width:bw,height:bh}:null}],pvSnap);
+        }
       }).catch(function(){bdBusy=false;});
     }
     frameCnt++;
@@ -1794,6 +1918,8 @@ function stopCam(){
   if(stream){stream.getTracks().forEach(function(t){t.stop();});}
   stream=null;
   if(vid){vid.srcObject=null;}
+  var ro=document.getElementById('roi-overlay');
+  if(ro) ro.style.display='none';
   document.getElementById('cidle').style.display='flex';
   document.getElementById('bstop').style.display='none';
   document.getElementById('sbar').style.display='none';
