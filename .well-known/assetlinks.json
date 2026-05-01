@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.unicasoft.karekod",
+    "sha256_cert_fingerprints": [
+      "11:48:5F:B7:FE:EF:CE:73:D7:27:7A:FA:9D:D0:C0:E7:0E:A4:E1:AB:3A:05:7D:FC:7A:FE:80:D2:B5:62:C5:55"
+    ]
+  }
+}]
