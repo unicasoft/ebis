@@ -477,7 +477,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v30</span>
+  <span class="hbadge">v31</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -525,16 +525,12 @@ canvas{display:none}
       <div class="card-h"><div class="pdot" id="cdot"></div><span id="cstat">Kamera Bekleniyor</span><button id="btorch" onclick="toggleTorch()" title="El Feneri">🔦</button></div>
       <!-- Tarama Modu Araç Çubuğu -->
       <div id="scan-mode-bar">
-        <button class="sm-btn on" id="sm-qr" onclick="setScanMode('qr')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="14" y="14" width="3" height="1.5" fill="currentColor" stroke="none"/><rect x="14" y="17" width="7" height="1.5" fill="currentColor" stroke="none"/><rect x="19.5" y="14" width="1.5" height="7" fill="currentColor" stroke="none"/></svg>
-          QR Kodu
-        </button>
-        <button class="sm-btn" id="sm-bar" onclick="setScanMode('bar')">
-          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2" y="4" width="1.5" height="16"/><rect x="5" y="4" width="3" height="16"/><rect x="10" y="4" width="1.5" height="16"/><rect x="13" y="4" width="1" height="16"/><rect x="16" y="4" width="3" height="16"/><rect x="21" y="4" width="1.5" height="16"/></svg>
-          Çubuk Barkod
+        <button class="sm-btn on" id="sm-frame" onclick="setScanMode('frame')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 8 3 3 8 3"/><polyline points="16 3 21 3 21 8"/><polyline points="21 16 21 21 16 21"/><polyline points="8 21 3 21 3 16"/></svg>
+          Çerçeve
         </button>
         <button class="sm-btn" id="sm-full" onclick="setScanMode('full')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           Tam Ekran
         </button>
       </div>
@@ -1280,29 +1276,22 @@ function drAction(a){
 }
 
 // ── TARAMA MODU & ROI ───────────────────────────────────────────────────────
-var camMode='qr'; // 'qr' | 'bar' | 'full'
-var previewCnv=null, previewCx=null; // Görüntü arka planı (display-size)
-var roiCnv=null, roiCx=null;         // ROI kırpma canvas
+var camMode='frame'; // 'frame' | 'full'
+var previewCnv=null, previewCx=null;
+var roiCnv=null, roiCx=null;
 
 function getRoi(w,h){
-  // smCnv (640×360) koordinatlarında ROI döner, full modda null
   if(camMode==='full') return null;
-  if(camMode==='qr'){
-    var s=Math.min(w,h)*0.72;
-    return {x:Math.round((w-s)/2),y:Math.round((h-s)/2),w:Math.round(s),h:Math.round(s)};
-  }
-  // bar: geniş dikdörtgen
-  var bw=Math.round(w*0.90), bh=Math.round(h*0.34);
-  return {x:Math.round((w-bw)/2),y:Math.round((h-bh)/2),w:bw,h:bh};
+  var s=Math.min(w,h)*0.72;
+  return {x:Math.round((w-s)/2),y:Math.round((h-s)/2),w:Math.round(s),h:Math.round(s)};
 }
 
 function setScanMode(m){
   camMode=m;
-  ['qr','bar','full'].forEach(function(n){
+  ['frame','full'].forEach(function(n){
     var b=document.getElementById('sm-'+n);
     if(b) b.className='sm-btn'+(n===m?' on':'');
   });
-  // corners klasik cbox yalnız full modda gizlenir
   var cb=document.getElementById('cam-cbox');
   if(cb) cb.style.display=(m==='full'?'none':'');
   updateRoiOverlay();
@@ -1316,7 +1305,6 @@ function updateRoiOverlay(){
   var wrap=document.querySelector('.vwrap');
   if(!wrap){ov.style.display='none';return;}
   var dw=wrap.clientWidth, dh=wrap.clientHeight;
-  // ROI in smCnv (640×360) → scale to display
   var roi=getRoi(SW,SH);
   if(!roi){ov.style.display='none';return;}
   var sc=Math.max(dw/SW,dh/SH);
@@ -1326,7 +1314,6 @@ function updateRoiOverlay(){
   box.style.top=Math.round(ry)+'px';
   box.style.width=Math.round(rw)+'px';
   box.style.height=Math.round(rh)+'px';
-  ov.className='roi-overlay'+(camMode==='bar'?' bar':'');
   ov.style.display='block';
 }
 
