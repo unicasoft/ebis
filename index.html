@@ -304,7 +304,15 @@ textarea.minp::placeholder{color:var(--dm)}
 .mic-info{flex:1;min-width:0}
 .mic-badge{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
 .mic-val{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx);word-break:break-all;line-height:1.4}
-/* Numaralı yığın sonuç listesi */
+/* Kamera çoklu kod buton şeridi */
+#cam-multi-bar{padding:10px 12px;background:var(--s2);border-top:1.5px solid var(--bd);border-radius:0 0 10px 10px}
+.cmb-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.cmb-btn{flex:1;min-width:64px;max-width:120px;padding:10px 6px 8px;border:2.5px solid;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;background:transparent;text-align:center;transition:opacity .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cmb-btn:active{opacity:.7}
+.cmb-num{font-size:20px;font-weight:900;line-height:1}
+.cmb-type{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;opacity:.85}
+.cmb-all{width:100%;padding:12px;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;background:var(--s3);color:var(--lb);letter-spacing:.3px;transition:background .15s}
+.cmb-all:active{background:var(--bd)}
 #all-codes-sec{padding-bottom:12px}
 .ac-card{background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden}
 .ac-head{display:flex;align-items:center;gap:9px;padding:8px 12px;background:var(--s2);border-bottom:1.5px solid var(--bd)}
@@ -442,7 +450,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v26</span>
+  <span class="hbadge">v27</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -504,6 +512,7 @@ canvas{display:none}
         <div class="camhint" id="camhint" style="display:none">🔍 QR'ı çerçeve içine al · Yaklaştır</div>
       </div>
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
+      <div id="cam-multi-bar" style="display:none"></div>
     </div>
   </div>
 
@@ -1173,6 +1182,8 @@ function hideMultiSel(){
   multiSelActive=false; multiCodes=[];
   var mc=document.getElementById('multi-canvas');
   if(mc) mc.style.display='';
+  var bar=document.getElementById('cam-multi-bar');
+  if(bar){bar.style.display='none';bar.innerHTML='';}
 }
 
 function showMultiSel(codes){
@@ -1190,10 +1201,9 @@ function showMultiSel(codes){
   var sc=Math.max(cw/vw,ch/vh);
   var ox=(cw-vw*sc)/2, oy=(ch-vh*sc)/2;
 
-  // Dondurulmuş kare
+  // Dondurulmuş snapshot + dim
   ctx.drawImage(vid,0,0,vw,vh,ox,oy,vw*sc,vh*sc);
-  // Dim overlay
-  ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,cw,ch);
+  ctx.fillStyle='rgba(0,0,0,0.38)'; ctx.fillRect(0,0,cw,ch);
 
   multiCodes=codes;
   codes.forEach(function(bc,i){
@@ -1201,61 +1211,68 @@ function showMultiSel(codes){
     var b=bc.boundingBox;
     var x=b.x*sc+ox, y=b.y*sc+oy, w=b.width*sc, h=b.height*sc;
     // Glow çerçeve
-    ctx.shadowColor=col; ctx.shadowBlur=12;
+    ctx.shadowColor=col; ctx.shadowBlur=14;
     ctx.strokeStyle=col; ctx.lineWidth=3.5;
     ctx.strokeRect(x,y,w,h);
     ctx.shadowBlur=0;
-    // Sayı etiketi
-    var lx=x, ly=y-26<0?y+h+2:y-26;
+    // Numara rozeti
+    var bx=Math.max(4,x), by=y-30<4?y+h+2:y-30;
     ctx.fillStyle=col;
-    ctx.fillRect(lx,ly,32,24);
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(bx,by,34,26,6); else ctx.rect(bx,by,34,26);
+    ctx.fill();
     ctx.fillStyle='#fff';
-    ctx.font='bold 15px Inter,sans-serif';
+    ctx.font='bold 16px Inter,sans-serif';
     ctx.textBaseline='middle'; ctx.textAlign='center';
-    ctx.fillText(String(i+1),lx+16,ly+12);
+    ctx.fillText(String(i+1),bx+17,by+13);
     ctx.textAlign='start'; ctx.textBaseline='alphabetic';
   });
 
   mc.style.display='block';
+
+  // Hint güncelle
   var hint=document.getElementById('camhint');
   if(hint){
     hint.style.display='block';
-    hint.textContent='👆 '+codes.length+' kod bulundu — okumak istediğine dokun';
+    hint.textContent='👇 '+codes.length+' kod — aşağıdan seç';
     hint.className='camhint warn';
   }
 
-  function onTap(e){
-    e.preventDefault();
-    var rect=mc.getBoundingClientRect();
-    var cx2=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    var cy2=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
-    var px=cx2*(mc.width/rect.width);
-    var py=cy2*(mc.height/rect.height);
+  // ── Buton şeridi oluştur ──────────────────────────────────────────────
+  var bar=document.getElementById('cam-multi-bar');
+  var btns='<div class="cmb-row">';
+  codes.forEach(function(bc,i){
+    var col=MCOLORS[i%MCOLORS.length];
+    var fmt=detectFmt(bc.rawValue||'');
+    btns+='<button class="cmb-btn" style="border-color:'+col+';color:'+col+'" onclick="selMultiCam('+i+')">'+
+      '<span class="cmb-num">'+String(i+1)+'</span>'+
+      '<span class="cmb-type">'+fmt.badge+'</span>'+
+    '</button>';
+  });
+  btns+='</div>';
+  btns+='<button class="cmb-all" onclick="selAllMultiCam()">☰ Tümünü Sırayla Oku ('+codes.length+' Kod)</button>';
+  bar.innerHTML=btns;
+  bar.style.display='block';
 
-    var found=null, bestArea=Infinity;
-    multiCodes.forEach(function(bc){
-      var b=bc.boundingBox;
-      var x=b.x*sc+ox, y=b.y*sc+oy, w=b.width*sc, h=b.height*sc;
-      var pad=22;
-      if(px>=x-pad&&px<=x+w+pad&&py>=y-pad&&py<=y+h+pad){
-        var area=w*h; if(area<bestArea){bestArea=area;found=bc.rawValue;}
-      }
-    });
+  // Bar'a kaydır
+  setTimeout(function(){bar.scrollIntoView({behavior:'smooth',block:'nearest'});},120);
+}
 
-    mc.removeEventListener('click',onTap);
-    mc.removeEventListener('touchend',onTap);
-    hideMultiSel();
+function selMultiCam(idx){
+  var bc=multiCodes[idx];
+  if(!bc) return;
+  hideMultiSel();
+  camFound(bc.rawValue);
+}
 
-    if(found){
-      camFound(found);
-    } else {
-      // Kutu dışı dokunuş → taramaya devam
-      multiSelActive=false;
-      raf=requestAnimationFrame(scanLoop);
-    }
-  }
-  mc.addEventListener('click',onTap);
-  mc.addEventListener('touchend',onTap,{passive:false});
+function selAllMultiCam(){
+  var codes=multiCodes.slice();
+  hideMultiSel();
+  // Geçmişe ekle + numaralı yığın liste göster
+  _multiImgCodes=codes.map(function(bc){return {text:bc.rawValue};});
+  codes.forEach(function(c){histAdd(c.text);});
+  document.getElementById('rsec').style.display='none';
+  selectAllImageCodes();
 }
 
 // ── KAMERA ──────────────────────────────────────────────────────────────────
