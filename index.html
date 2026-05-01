@@ -288,11 +288,22 @@ textarea.minp::placeholder{color:var(--dm)}
 .dr-ic{font-size:18px;width:24px;text-align:center;flex-shrink:0}
 .dr-sep{height:1px;background:var(--bd);margin:6px 18px}
 .dr-list-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;
-  border-bottom:1px solid var(--bd);background:var(--s2)}
+  border-bottom:1px solid var(--bd);background:var(--s2);flex-shrink:0}
 .dr-list-hd button{background:none;border:none;color:var(--ac);
   font-size:13px;font-weight:600;cursor:pointer;padding:2px 0}
 #dr-list-title{font-size:13px;font-weight:700;color:var(--tx)}
-#dr-list-body{overflow-y:auto;flex:1;padding:6px 0}
+#dr-list{flex:1;min-height:0;overflow:hidden}
+#dr-list-body{overflow-y:auto;flex:1;min-height:0;padding:6px 0;-webkit-overflow-scrolling:touch}
+/* Resim çoklu kod seçim listesi */
+#multi-img-sel{display:none;background:var(--s1);border:1.5px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.mic-hd{padding:9px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--lb);background:var(--s2);border-bottom:1.5px solid var(--bd)}
+.mic-item{display:flex;align-items:center;gap:11px;padding:10px 14px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .12s}
+.mic-item:last-child{border-bottom:none}
+.mic-item:active{background:var(--s2)}
+.mic-thumb{width:54px;height:54px;border-radius:6px;object-fit:cover;flex-shrink:0;border:2px solid var(--bd)}
+.mic-info{flex:1;min-width:0}
+.mic-badge{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
+.mic-val{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx);word-break:break-all;line-height:1.4}
 .dr-hist-item{padding:11px 16px;border-bottom:1px solid var(--bd);cursor:pointer}
 .dr-hist-item:active{background:var(--s2)}
 .dr-hist-meta{font-size:11px;color:var(--dm);margin-bottom:4px;
@@ -418,7 +429,7 @@ canvas{display:none}
     <h1>Karekod Doğrulayıcı</h1>
     <p>EBİS · GİB e-Belge · QR · Barkod</p>
   </div>
-  <span class="hbadge">v24</span>
+  <span class="hbadge">v25</span>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -500,6 +511,7 @@ canvas{display:none}
           <div class="prev-ov" id="spinov" style="display:none"><div class="spinner"></div></div>
         </div>
         <button class="bclr" id="bclr" onclick="clrImg()" style="display:none">✕ Resmi Temizle</button>
+        <div id="multi-img-sel"></div>
       </div>
     </div>
   </div>
@@ -1585,15 +1597,138 @@ function rdImg(file){
     document.getElementById('dropz').style.display='none';
     document.getElementById('bclr').style.display='block';
     document.getElementById('spinov').style.display='flex';
+    document.getElementById('multi-img-sel').style.display='none';
+    document.getElementById('multi-img-sel').innerHTML='';
     img.onload=function(){
-      decodeImgMulti(img,function(txt){
+      findAllCodesInImage(img,function(codes){
         document.getElementById('spinov').style.display='none';
-        if(txt) procQR(txt);
-        else showToast('QR kod bulunamadı. Daha net / yakın resim deneyin.');
+        if(!codes||codes.length===0){
+          showToast('QR/Barkod bulunamadı. Daha net / yakın resim deneyin.');
+        } else if(codes.length===1){
+          procQR(codes[0].text);
+        } else {
+          showImageCodeSelection(codes,img);
+        }
       });
     };
   };
   r.readAsDataURL(file);
+}
+
+// ── GÖRÜNTÜ ÇOKLU KOD ──────────────────────────────────────────────────────
+function findAllCodesInImage(img,cb){
+  // BarcodeDetector varsa tümünü birden bul
+  if(barcodeDetector){
+    barcodeDetector.detect(img).then(function(codes){
+      if(codes&&codes.length>0){
+        cb(codes.map(function(c){return {text:c.rawValue,bbox:c.boundingBox};}));
+      } else {
+        findAllCodesMultiRegion(img,cb);
+      }
+    }).catch(function(){findAllCodesMultiRegion(img,cb);});
+    return;
+  }
+  findAllCodesMultiRegion(img,cb);
+}
+
+function findAllCodesMultiRegion(img,cb){
+  var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h){cb([]);return;}
+  var fc=document.createElement('canvas'); fc.width=w; fc.height=h;
+  fc.getContext('2d').drawImage(img,0,0);
+  var hw=w>>1, hh=h>>1;
+  var regions=[
+    {x:0,  y:0,  w:w,  h:h},
+    {x:0,  y:0,  w:hw, h:hh},
+    {x:hw, y:0,  w:hw, h:hh},
+    {x:0,  y:hh, w:hw, h:hh},
+    {x:hw, y:hh, w:hw, h:hh},
+    {x:0,  y:0,  w:w,  h:hh},
+    {x:hw, y:0,  w:hw, h:h},
+    {x:0,  y:hh, w:w,  h:hh},
+    {x:0,  y:0,  w:hw, h:h},
+    {x:w/5|0,y:h/5|0,w:w*3/5|0,h:h*3/5|0}
+  ];
+  var found=[];
+  function addUniq(txt){
+    if(!txt) return;
+    if(!found.some(function(f){return f.text===txt;})) found.push({text:txt});
+  }
+  var proms=regions.map(function(rg){
+    var rc=makeRegion(fc,rg.x,rg.y,rg.w,rg.h);
+    var p=imgPrep(rc,rg.w,rg.h);
+    return scanRegion(p).then(function(t){addUniq(t);});
+  });
+  Promise.all(proms).then(function(){cb(found);}).catch(function(){cb(found);});
+}
+
+var _multiImgCodes=[];
+function showImageCodeSelection(codes,imgEl){
+  _multiImgCodes=codes;
+  var sel=document.getElementById('multi-img-sel');
+  var html='<div class="mic-hd">📋 '+codes.length+' KOD BULUNDU — SEÇ VEYA TÜMÜNÜ OKU</div>';
+
+  codes.forEach(function(code,i){
+    var col=MCOLORS[i%MCOLORS.length];
+    var preview=(code.text.length>65?code.text.substring(0,65)+'…':code.text).replace(/</g,'&lt;');
+    var fmt=detectFmt(code.text);
+    var thumbId='micthumb'+i;
+    html+='<div class="mic-item" onclick="selectImageCode('+i+')" style="border-left:3px solid '+col+'">'+
+      '<canvas id="'+thumbId+'" width="54" height="54" class="mic-thumb" style="border-color:'+col+'"></canvas>'+
+      '<div class="mic-info">'+
+        '<div class="mic-badge" style="color:'+col+'">'+String(i+1)+'. '+fmt.badge+'</div>'+
+        '<div class="mic-val">'+preview+'</div>'+
+      '</div>'+
+      '<div style="font-size:20px;padding-left:4px">›</div>'+
+    '</div>';
+  });
+
+  html+='<div class="mic-item" onclick="selectAllImageCodes()" style="border-left:3px solid var(--dm);background:var(--s2)">'+
+    '<div style="font-size:22px;width:54px;text-align:center;flex-shrink:0">☰</div>'+
+    '<div class="mic-info"><div class="mic-badge" style="color:var(--lb)">TÜM KODLAR</div>'+
+    '<div class="mic-val">'+codes.length+' kodu sırayla listele</div></div>'+
+    '<div style="font-size:20px;padding-left:4px">›</div></div>';
+
+  sel.innerHTML=html;
+  sel.style.display='block';
+  setTimeout(function(){sel.scrollIntoView({behavior:'smooth',block:'nearest'});},80);
+
+  // Thumbnail çiz — bbox varsa kod bölgesini, yoksa tüm görsel
+  codes.forEach(function(code,i){
+    var c=document.getElementById('micthumb'+i);
+    if(!c||!imgEl) return;
+    var ctx=c.getContext('2d');
+    if(code.bbox){
+      var iw=imgEl.naturalWidth||imgEl.width, ih=imgEl.naturalHeight||imgEl.height;
+      var b=code.bbox;
+      var pad=Math.min(b.width,b.height)*0.2;
+      var sx=Math.max(0,b.x-pad), sy=Math.max(0,b.y-pad);
+      var sw=Math.min(iw-sx,b.width+pad*2), sh=Math.min(ih-sy,b.height+pad*2);
+      ctx.drawImage(imgEl,sx,sy,sw,sh,0,0,54,54);
+    } else {
+      ctx.drawImage(imgEl,0,0,54,54);
+    }
+  });
+}
+
+function selectImageCode(idx){
+  var code=_multiImgCodes[idx];
+  if(!code) return;
+  document.getElementById('multi-img-sel').style.display='none';
+  procQR(code.text);
+}
+
+function selectAllImageCodes(){
+  // İlk kodu işle, sonuç bölümüne geç — diğerleri aşağıda accordion
+  if(!_multiImgCodes.length) return;
+  document.getElementById('multi-img-sel').style.display='none';
+  // Her birini geçmişe ekle ve ilkini göster
+  _multiImgCodes.forEach(function(c){histAdd(c.text);});
+  procQR(_multiImgCodes[0].text);
+  // Kalan kodlar için toast
+  if(_multiImgCodes.length>1){
+    showToast(_multiImgCodes.length+' kod geçmişe eklendi. Menü > Geçmiş\'ten ulaşabilirsiniz.');
+  }
 }
 
 // ── GÖRÜNTÜ: Çok bölgeli + döndürme destekli decode ─────────────────────────
@@ -1745,6 +1880,9 @@ function clrImg(){
   document.getElementById('dropz').style.display='block';
   document.getElementById('bclr').style.display='none';
   document.getElementById('flinput').value='';
+  document.getElementById('multi-img-sel').style.display='none';
+  document.getElementById('multi-img-sel').innerHTML='';
+  _multiImgCodes=[];
   document.getElementById('rsec').style.display='none';
 }
 
