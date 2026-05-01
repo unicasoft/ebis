@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr" data-theme="koyu">
+<html lang="tr" id="htmlroot" data-theme="koyu">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -7,8 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Karekod">
-<title>Karekod Doğrulayıcı</title>
+<meta name="apple-mobile-web-app-title" content="UNIBAR">
+<title>UNIBAR</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230055cc'/%3E%3Crect x='5' y='5' width='54' height='54' rx='8' fill='%230099dd'/%3E%3Crect x='10' y='10' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='13' y='13' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='16' y='16' width='8' height='8' fill='white'/%3E%3Crect x='34' y='10' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='37' y='13' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='40' y='16' width='8' height='8' fill='white'/%3E%3Crect x='10' y='34' width='20' height='20' rx='3' fill='white'/%3E%3Crect x='13' y='37' width='14' height='14' rx='2' fill='%230055cc'/%3E%3Crect x='16' y='40' width='8' height='8' fill='white'/%3E%3Crect x='34' y='34' width='8' height='8' fill='white'/%3E%3Crect x='46' y='34' width='8' height='8' fill='white'/%3E%3Crect x='34' y='46' width='8' height='8' fill='white'/%3E%3Crect x='46' y='46' width='8' height='8' fill='white'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='38' fill='%230055cc'/%3E%3Crect x='14' y='14' width='152' height='152' rx='26' fill='%230099dd'/%3E%3Crect x='28' y='28' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='35' y='35' width='42' height='42' rx='5' fill='%230055cc'/%3E%3Crect x='44' y='44' width='24' height='24' fill='white'/%3E%3Crect x='96' y='28' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='103' y='35' width='42' height='42' rx='5' fill='%230055cc'/%3E%3Crect x='112' y='44' width='24' height='24' fill='white'/%3E%3Crect x='28' y='96' width='56' height='56' rx='8' fill='white'/%3E%3Crect x='35' y='103' width='42' height='42' rx='5' fill='%230055cc'/%3E%3Crect x='44' y='112' width='24' height='24' fill='white'/%3E%3Crect x='98' y='98' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='130' y='98' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='98' y='130' width='22' height='22' rx='3' fill='white'/%3E%3Crect x='130' y='130' width='22' height='22' rx='3' fill='white'/%3E%3C/svg%3E">
 <link rel="manifest" href="/ebis/manifest.json">
@@ -438,6 +438,90 @@ footer a:hover{text-decoration:underline}
 canvas{display:none}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 </style>
+
+<script>
+// ── UNIBAR LANG ──
+var LANG={
+  tr:{
+    appSub:"Universal Barcode Reader",
+    theme:"Tema:",thKoyu:"Koyu",thAcik:"Açık",thBej:"Bej/Kahve",
+    tabCam:"Kamera ile Tara",tabImg:"Resimden Oku",
+    camWait:"Kamera Bekleniyor",camOff:"Kamera Kapalı",camStart:"Kamerayı Başlat",
+    camStop:"■ Durdur",camScan:"Karekod / Barkod Taranıyor…",camTorch:"El Feneri",
+    camHint:"🔍 QR’ı çerçeve içine al · Yaklaştır",
+    imgDrop:"Sürükle & Bırak",imgOr:"veya",imgBrowse:"Dosya Seç",imgClear:"✕ Resmi Temizle",
+    resCopy:"📋 Kopyala",resShare:"🔗 Paylaş",resNew:"↺ Yeni Tarama / Sıfırla",
+    drTitle:"UNIBAR",drScan:"Tara",drImg:"Görüntü Tarama",drText:"Metin Doğrula",
+    drHist:"Geçmiş",drCopy:"Kopyala",drShare:"Paylaş",drClrHist:"Geçmişi Temizle",
+    drValPh:"EBİS, GİB JSON, URL, barkod içeriği…\n\nYapıştırın ve Doğrula’ya basın.",
+    drValBtn:"Doğrula →",histTitle:"🕐 Geçmiş",favTitle:"★ Favoriler",
+    listClr:"🗑 Listeyi Temizle",
+    ok:"Format Uygun",fail:"Format Hataları Tespit Edildi",
+    copied:"✓ Kopyalandı!",cantCopy:"Kopyalanamadı.",
+    histClrQ:"Geçmiş silinsin mi?",histClrd:"Geçmiş temizlendi.",
+    installing:"Ana Ekrana Ekle",waiting:"⏳ Taranıyor, lütfen bekleyin…",
+    langBtn:"🌐 TR"
+  },
+  en:{
+    appSub:"Universal Barcode Reader",
+    theme:"Theme:",thKoyu:"Dark",thAcik:"Light",thBej:"Beige",
+    tabCam:"Scan with Camera",tabImg:"Read from Image",
+    camWait:"Camera Waiting",camOff:"Camera Off",camStart:"Start Camera",
+    camStop:"■ Stop",camScan:"Scanning QR / Barcode…",camTorch:"Flashlight",
+    camHint:"🔍 Align QR in frame · Zoom in",
+    imgDrop:"Drag & Drop",imgOr:"or",imgBrowse:"Choose File",imgClear:"✕ Clear Image",
+    resCopy:"📋 Copy",resShare:"🔗 Share",resNew:"↺ New Scan / Reset",
+    drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Validate Text",
+    drHist:"History",drCopy:"Copy",drShare:"Share",drClrHist:"Clear History",
+    drValPh:"EBİS, GİB JSON, URL, barcode content…\n\nPaste and press Validate.",
+    drValBtn:"Validate →",histTitle:"🕐 History",favTitle:"★ Favorites",
+    listClr:"🗑 Clear List",
+    ok:"Format Valid",fail:"Format Errors Detected",
+    copied:"✓ Copied!",cantCopy:"Cannot copy.",
+    histClrQ:"Clear history?",histClrd:"History cleared.",
+    installing:"Add to Home Screen",waiting:"⏳ Scanning, please wait…",
+    langBtn:"🌐 EN"
+  }
+};
+var _lang=(function(){
+  var s=localStorage.getItem("ub_lang"); if(s) return s;
+  return (navigator.language||"tr").toLowerCase().startsWith("tr")?"tr":"en";
+})();
+function T(k){return (LANG[_lang]||LANG.tr)[k]||k;}
+function applyLang(){
+  var L=LANG[_lang]||LANG.tr;
+  document.getElementById("htmlroot").lang=_lang;
+  var s=document.getElementById("hsubtitle"); if(s) s.textContent=L.appSub;
+  var tbl=document.querySelector(".tbl"); if(tbl) tbl.textContent=L.theme;
+  var btns=document.querySelectorAll(".tbtn");
+  if(btns[0]) btns[0].childNodes[btns[0].childNodes.length-1].textContent=L.thKoyu;
+  if(btns[1]) btns[1].childNodes[btns[1].childNodes.length-1].textContent=L.thAcik;
+  if(btns[2]) btns[2].childNodes[btns[2].childNodes.length-1].textContent=L.thBej;
+  var tCam=document.getElementById("t-cam"); if(tCam) tCam.querySelector(".mtab-l").textContent=L.tabCam;
+  var tImg=document.getElementById("t-img"); if(tImg) tImg.querySelector(".mtab-l").textContent=L.tabImg;
+  var cstat=document.getElementById("cstat");
+  if(cstat&&cstat.textContent!==L.camScan) cstat.textContent=L.camWait;
+  var bs=document.getElementById("btnstart"); if(bs) bs.textContent=L.camStart;
+  var bstop=document.getElementById("bstop"); if(bstop) bstop.textContent=L.camStop;
+  var bt=document.getElementById("btorch"); if(bt) bt.title=L.camTorch;
+  var bclr=document.getElementById("bclr"); if(bclr) bclr.textContent=L.imgClear;
+  var dtxt=document.querySelector(".dt"); if(dtxt) dtxt.textContent=L.imgDrop;
+  var drvi=document.getElementById("dr-val-input"); if(drvi) drvi.placeholder=L.drValPh;
+  var drvb=document.querySelector(".dr-val-btn"); if(drvb) drvb.textContent=L.drValBtn;
+  var lbln=document.getElementById("btn-lang"); if(lbln) lbln.textContent=L.langBtn;
+  document.querySelectorAll(".ra-btn").forEach(function(b,i){
+    if(i===0) b.textContent=L.resCopy;
+    else if(i===1) b.textContent=L.resShare;
+  });
+  var rescan=document.querySelector(".btnrs"); if(rescan) rescan.textContent=L.resNew;
+}
+function toggleLang(){
+  _lang=(_lang==="tr"?"en":"tr");
+  localStorage.setItem("ub_lang",_lang);
+  applyLang();
+}
+document.addEventListener("DOMContentLoaded",applyLang);
+</script>
 </head>
 <body>
 <header>
@@ -462,10 +546,11 @@ canvas{display:none}
     </svg>
   </div>
   <div class="htxt">
-    <h1>Karekod Doğrulayıcı</h1>
-    <p>EBİS · GİB e-Belge · QR · Barkod</p>
+    <h1>UNIBAR</h1>
+    <p id="hsubtitle">Universal Barcode Reader</p>
   </div>
-  <span class="hbadge">v31</span>
+  <span class="hbadge">v32</span>
+  <button id="btn-lang" onclick="toggleLang()" title="Language" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--tx);padding:4px 6px;border-radius:6px;">🌐 TR</button>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
 
@@ -637,7 +722,7 @@ canvas{display:none}
         <rect x="21" y="21" width="4" height="4" rx=".7" fill="white"/>
       </svg>
     </div>
-    <div class="dr-title">Karekod Doğrulayıcı</div>
+    <div class="dr-title">UNIBAR</div>
     <button class="dr-close" onclick="closeDrawer()">✕</button>
   </div>
   <div class="dr-menu">
@@ -948,7 +1033,7 @@ function showResult(res,rawData){
   document.getElementById('flist').style.display='';
   rh.className='rhead '+(res.ok?'ok':'fail');
   document.getElementById('rico').textContent=res.ok?'✅':'❌';
-  document.getElementById('rtitle').textContent=res.ok?'Format Uygun':'Format Hataları Tespit Edildi';
+  document.getElementById('rtitle').textContent=res.ok?T('ok'):T('fail');
   document.getElementById('rsub').textContent=res.ok
     ?'Karekod tüm doğrulama kurallarını geçti.'
     :res.errs.length+' sorun bulundu.';
@@ -1158,11 +1243,11 @@ function exportDrList(fmt){
     content=JSON.stringify(items.map(function(it){return {tarih:fmtDate(it.t),icerik:it.v};}),null,2);
     mime='application/json';ext='json';
   } else {
-    content='<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Karekod '+lbl+'</title>'
+    content='<!DOCTYPE html><html lang="tr" id="htmlroot"><head><meta charset="UTF-8"><title>Karekod '+lbl+'</title>'
       +'<style>body{font-family:sans-serif;padding:16px}table{border-collapse:collapse;width:100%}'
       +'th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#eee}'
       +'td:first-child{white-space:nowrap}td:last-child{font-family:monospace;font-size:12px;word-break:break-all}'
-      +'</style></head><body><h2>Karekod Doğrulayıcı — '+lbl+'</h2>'
+      +'</style></head><body><h2>UNIBAR — '+lbl+'</h2>'
       +'<table><tr><th>Tarih</th><th>İçerik</th></tr>'
       +items.map(function(it){return '<tr><td>'+fmtDate(it.t)+'</td><td>'+it.v.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</td></tr>';}).join('')
       +'</table></body></html>';
@@ -1235,8 +1320,8 @@ function drValSubmit(){
 }
 function raCopy(){
   if(!_lastRaw){showToast('Henüz sonuç yok.');return;}
-  if(navigator.clipboard) navigator.clipboard.writeText(_lastRaw).then(function(){showToast('✓ Kopyalandı!');});
-  else showToast('Kopyalanamadı.');
+  if(navigator.clipboard) navigator.clipboard.writeText(_lastRaw).then(function(){showToast(T('copied'));});
+  else showToast(T('cantCopy'));
 }
 function raShare(){
   if(!_lastRaw){showToast('Henüz sonuç yok.');return;}
@@ -1258,7 +1343,7 @@ function drAction(a){
   if(a==='hist'){renderDrList(histLoad(),'🕐 Geçmiş','hist');return;}
   if(a==='favs'){renderDrList(favLoad(),'⭐ Favoriler','fav');return;}
   if(a==='clrhist'){
-    if(confirm('Geçmiş silinsin mi?')){histSave([]);showToast('Geçmiş temizlendi.');}
+    if(confirm(T('histClrQ'))){histSave([]);showToast(T('histClrd'));}
     closeDrawer();return;
   }
 }
@@ -1486,7 +1571,7 @@ function onCamCode(codes,snap){
   if(snap&&snap.canvas) camLastSnap=snap;
   if(!camDebounceTimer){
     var h=document.getElementById('camhint');
-    if(h){h.style.display='block';h.textContent='⏳ Taranıyor, lütfen bekleyin…';h.className='camhint';}
+    if(h){h.style.display='block';h.textContent=T('waiting');h.className='camhint';}
     camDebounceTimer=setTimeout(function(){
       camDebounceTimer=null;
       if(!scanning||multiSelActive){camScanBuf={};camLastSnap=null;return;}
@@ -1597,7 +1682,7 @@ function startCam(){
     document.getElementById('bstop').style.display='block';
     document.getElementById('sbar').style.display='block';
     document.getElementById('cdot').classList.add('on');
-    document.getElementById('cstat').textContent='Karekod / Barkod Taranıyor…';
+    document.getElementById('cstat').textContent=T('camScan');
     var h=document.getElementById('camhint');
     if(h){h.style.display='block';h.textContent='🔍 QR\'ı çerçeve içine al';h.className='camhint';}
     scanning=true; frameCnt=0; hardFrames=0;
@@ -1899,7 +1984,7 @@ function stopCam(){
   document.getElementById('bstop').style.display='none';
   document.getElementById('sbar').style.display='none';
   document.getElementById('cdot').classList.remove('on');
-  document.getElementById('cstat').textContent='Kamera Kapalı';
+  document.getElementById('cstat').textContent=T('camOff');
   var h=document.getElementById('camhint');
   if(h) h.style.display='none';
 }

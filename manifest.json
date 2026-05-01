@@ -1,7 +1,7 @@
 {
-  "name": "Karekod Doğrulayıcı",
-  "short_name": "Karekod",
-  "description": "EBİS ve GİB e-irsaliye QR kodlarını doğrular",
+  "name": "UNIBAR",
+  "short_name": "UNIBAR",
+  "description": "Universal Barcode Reader",
   "start_url": "/ebis/",
   "scope": "/ebis/",
   "display": "standalone",
@@ -10,8 +10,23 @@
   "theme_color": "#0a1628",
   "lang": "tr",
   "icons": [
-    { "src": "/ebis/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/ebis/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/ebis/icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/ebis/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ebis/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ebis/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
