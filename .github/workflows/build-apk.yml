@@ -90,7 +90,9 @@ jobs:
         run: |
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$HOME/android-sdk
-          echo "n" | bubblewrap build \
+          JDK_PATH=$(dirname $(dirname $(readlink -f $(which java))))
+          echo "JDK Path: $JDK_PATH"
+          printf "n\n${JDK_PATH}\n" | bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
