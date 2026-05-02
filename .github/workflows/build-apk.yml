@@ -48,17 +48,16 @@ jobs:
       - name: Pre-configure Bubblewrap
         run: |
           mkdir -p $HOME/.bubblewrap
-          SDK_PATH="$HOME/android-sdk"
-          JDK_PATH="$JAVA_HOME"
-          echo "SDK: $SDK_PATH"
-          echo "JDK: $JDK_PATH"
-          cat > $HOME/.bubblewrap/config.json << JSONEOF
-          {
-            "jdkPath": "$JDK_PATH",
-            "androidSdkPath": "$SDK_PATH"
-          }
-          JSONEOF
-          cat $HOME/.bubblewrap/config.json
+          python3 -c "
+import json, os
+cfg = {
+  'jdkPath': os.environ['JAVA_HOME'],
+  'androidSdkPath': os.path.expanduser('~/android-sdk')
+}
+with open(os.path.expanduser('~/.bubblewrap/config.json'), 'w') as f:
+    json.dump(cfg, f, indent=2)
+print('Config:', open(os.path.expanduser('~/.bubblewrap/config.json')).read())
+"
 
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
@@ -66,39 +65,40 @@ jobs:
       - name: Create twa-manifest.json
         run: |
           mkdir -p /tmp/twa-build
-          cat > /tmp/twa-build/twa-manifest.json << 'EOF'
-          {
-            "packageId": "com.unicasoft.unibar",
-            "host": "unicasoft.github.io",
-            "name": "UNIBAR",
-            "launcherName": "UNIBAR",
-            "display": "standalone",
-            "orientation": "portrait",
-            "themeColor": "#0a1628",
-            "navigationColor": "#0a1628",
-            "backgroundColor": "#0a1628",
-            "enableNotifications": false,
-            "startUrl": "/ebis/",
-            "iconUrl": "https://unicasoft.github.io/ebis/icons/icon-512.png",
-            "maskableIconUrl": "https://unicasoft.github.io/ebis/icons/icon-maskable.png",
-            "appVersion": "32",
-            "appVersionCode": 32,
-            "signingKey": {
-              "path": "/tmp/karekod.jks",
-              "alias": "karekod"
-            },
-            "splashScreenFadeOutDuration": 300,
-            "enableSiteSettingsShortcut": true,
-            "isChromeOSOnly": false,
-            "isMetaQuest": false,
-            "fullScopeUrl": "https://unicasoft.github.io/ebis/",
-            "minSdkVersion": 21,
-            "features": {},
-            "alphaDependencies": { "enabled": false },
-            "additionalTrustedOrigins": [],
-            "shortcuts": []
-          }
-          EOF
+          python3 -c "
+import json
+m = {
+  'packageId': 'com.unicasoft.unibar',
+  'host': 'unicasoft.github.io',
+  'name': 'UNIBAR',
+  'launcherName': 'UNIBAR',
+  'display': 'standalone',
+  'orientation': 'portrait',
+  'themeColor': '#0a1628',
+  'navigationColor': '#0a1628',
+  'backgroundColor': '#0a1628',
+  'enableNotifications': False,
+  'startUrl': '/ebis/',
+  'iconUrl': 'https://unicasoft.github.io/ebis/icons/icon-512.png',
+  'maskableIconUrl': 'https://unicasoft.github.io/ebis/icons/icon-maskable.png',
+  'appVersion': '32',
+  'appVersionCode': 32,
+  'signingKey': {'path': '/tmp/karekod.jks', 'alias': 'karekod'},
+  'splashScreenFadeOutDuration': 300,
+  'enableSiteSettingsShortcut': True,
+  'isChromeOSOnly': False,
+  'isMetaQuest': False,
+  'fullScopeUrl': 'https://unicasoft.github.io/ebis/',
+  'minSdkVersion': 21,
+  'features': {},
+  'alphaDependencies': {'enabled': False},
+  'additionalTrustedOrigins': [],
+  'shortcuts': []
+}
+with open('/tmp/twa-build/twa-manifest.json', 'w') as f:
+    json.dump(m, f, indent=2)
+print('Manifest OK')
+"
 
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
