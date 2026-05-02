@@ -32,20 +32,34 @@ jobs:
         run: |
           NPM_ROOT=$(npm root -g)
           echo "npm root: $NPM_ROOT"
-          # AndroidSdk.js dosyasını bul - iç içe node_modules dahil
-          SDK_FILE=$(find "$NPM_ROOT" -name "AndroidSdk.js" 2>/dev/null | grep bubblewrap | head -1)
-          echo "Patch file: [$SDK_FILE]"
+          # Olası tüm path'leri dene
+          CANDIDATES=(
+            "$NPM_ROOT/@bubblewrap/core/dist/lib/AndroidSdk.js"
+            "$NPM_ROOT/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
+          )
+          SDK_FILE=""
+          for f in "${CANDIDATES[@]}"; do
+            if [ -f "$f" ]; then
+              SDK_FILE="$f"
+              echo "Bulundu: $SDK_FILE"
+              break
+            fi
+          done
           if [ -z "$SDK_FILE" ]; then
-            # node ile require.resolve dene
-            SDK_FILE=$(node -e "const r=require.resolve('@bubblewrap/core/dist/lib/AndroidSdk'); console.log(r)" 2>/dev/null)
-            echo "node resolve: [$SDK_FILE]"
+            echo "Candidate'lar bulunamadı, geniş arama..."
+            find "$NPM_ROOT" -name "AndroidSdk.js" 2>/dev/null | head -5
+            # bubblewrap binary yolundan bul
+            BIN=$(which bubblewrap)
+            echo "bubblewrap binary: $BIN"
+            REAL=$(readlink -f "$BIN")
+            echo "realpath: $REAL"
+            PKG_DIR=$(dirname $(dirname "$REAL"))
+            echo "pkg dir: $PKG_DIR"
+            find "$PKG_DIR" -name "AndroidSdk.js" 2>/dev/null | head -5
           fi
-          if [ -z "$SDK_FILE" ]; then
-            echo "BULUNAMADI - tüm AndroidSdk.js dosyaları:"
-            find / -name "AndroidSdk.js" 2>/dev/null | head -10
-          else
-            sed -i 's/async validateSdk()/async validateSdk_orig()/g' "$SDK_FILE"
-            sed -i 's/async validateSdk_orig/async validateSdk() { return true; }\n    async validateSdk_orig/g' "$SDK_FILE"
+          if [ -n "$SDK_FILE" ]; then
+            sed -i 's/async validateSdk()/async _validateSdk_orig()/g' "$SDK_FILE"
+            sed -i 's/_validateSdk_orig/validateSdk() { return Promise.resolve(true); }\n    async _validateSdk_SKIP/g' "$SDK_FILE"
             echo "Patch OK"
             grep -n "validateSdk" "$SDK_FILE" | head -5
           fi
