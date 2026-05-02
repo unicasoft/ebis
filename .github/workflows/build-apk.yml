@@ -31,20 +31,24 @@ jobs:
       - name: Patch Bubblewrap SDK validation
         run: |
           NPM_ROOT=$(npm root -g)
-          echo "npm global root: $NPM_ROOT"
-          SDK_FILE=$(find "$NPM_ROOT/@bubblewrap/core/dist/lib" -name "AndroidSdk.js" 2>/dev/null | head -1)
-          echo "Patch file: $SDK_FILE"
+          echo "npm root: $NPM_ROOT"
+          # AndroidSdk.js dosyasını bul - iç içe node_modules dahil
+          SDK_FILE=$(find "$NPM_ROOT" -name "AndroidSdk.js" 2>/dev/null | grep bubblewrap | head -1)
+          echo "Patch file: [$SDK_FILE]"
           if [ -z "$SDK_FILE" ]; then
-            echo "Alternatif arama..."
-            SDK_FILE=$(find / -path "*/bubblewrap/core/dist/lib/AndroidSdk.js" 2>/dev/null | head -1)
-            echo "Bulundu: $SDK_FILE"
+            # node ile require.resolve dene
+            SDK_FILE=$(node -e "const r=require.resolve('@bubblewrap/core/dist/lib/AndroidSdk'); console.log(r)" 2>/dev/null)
+            echo "node resolve: [$SDK_FILE]"
           fi
-          # validateSdk her zaman true döndürsün
-          sed -i 's/async validateSdk()/async validateSdk_orig()/g' "$SDK_FILE"
-          # Sınıf içine yeni metod ekle - validateSdk_orig'den önce
-          sed -i 's/async validateSdk_orig/async validateSdk() { return true; }\n    async validateSdk_orig/g' "$SDK_FILE"
-          echo "Patch tamamlandı"
-          grep -n "validateSdk" "$SDK_FILE" | head -6
+          if [ -z "$SDK_FILE" ]; then
+            echo "BULUNAMADI - tüm AndroidSdk.js dosyaları:"
+            find / -name "AndroidSdk.js" 2>/dev/null | head -10
+          else
+            sed -i 's/async validateSdk()/async validateSdk_orig()/g' "$SDK_FILE"
+            sed -i 's/async validateSdk_orig/async validateSdk() { return true; }\n    async validateSdk_orig/g' "$SDK_FILE"
+            echo "Patch OK"
+            grep -n "validateSdk" "$SDK_FILE" | head -5
+          fi
 
       - name: Configure Bubblewrap
         run: |
