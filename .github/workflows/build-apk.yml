@@ -45,15 +45,20 @@ jobs:
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Pre-configure Bubblewrap (skip JDK prompt)
+      - name: Pre-configure Bubblewrap
         run: |
           mkdir -p $HOME/.bubblewrap
-          cat > $HOME/.bubblewrap/config.json << EOF
+          SDK_PATH="$HOME/android-sdk"
+          JDK_PATH="$JAVA_HOME"
+          echo "SDK: $SDK_PATH"
+          echo "JDK: $JDK_PATH"
+          cat > $HOME/.bubblewrap/config.json << JSONEOF
           {
-            "jdkPath": "/usr/lib/jvm/temurin-17-jdk-amd64",
-            "androidSdkPath": "$HOME/android-sdk"
+            "jdkPath": "$JDK_PATH",
+            "androidSdkPath": "$SDK_PATH"
           }
-          EOF
+          JSONEOF
+          cat $HOME/.bubblewrap/config.json
 
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
