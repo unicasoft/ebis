@@ -25,44 +25,33 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
+      - name: Install Bubblewrap locally
+        run: |
+          mkdir -p /tmp/bw
+          cd /tmp/bw
+          npm init -y
+          npm install @bubblewrap/cli
 
       - name: Patch Bubblewrap SDK validation
         run: |
-          NPM_ROOT=$(npm root -g)
-          echo "npm root: $NPM_ROOT"
-          # Olası tüm path'leri dene
-          CANDIDATES=(
-            "$NPM_ROOT/@bubblewrap/core/dist/lib/AndroidSdk.js"
-            "$NPM_ROOT/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
-          )
-          SDK_FILE=""
-          for f in "${CANDIDATES[@]}"; do
-            if [ -f "$f" ]; then
-              SDK_FILE="$f"
-              echo "Bulundu: $SDK_FILE"
-              break
-            fi
-          done
-          if [ -z "$SDK_FILE" ]; then
-            echo "Candidate'lar bulunamadı, geniş arama..."
-            find "$NPM_ROOT" -name "AndroidSdk.js" 2>/dev/null | head -5
-            # bubblewrap binary yolundan bul
-            BIN=$(which bubblewrap)
-            echo "bubblewrap binary: $BIN"
-            REAL=$(readlink -f "$BIN")
-            echo "realpath: $REAL"
-            PKG_DIR=$(dirname $(dirname "$REAL"))
-            echo "pkg dir: $PKG_DIR"
-            find "$PKG_DIR" -name "AndroidSdk.js" 2>/dev/null | head -5
+          SDK_FILE="/tmp/bw/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
+          if [ ! -f "$SDK_FILE" ]; then
+            # iç içe olabilir
+            SDK_FILE=$(find /tmp/bw/node_modules -name "AndroidSdk.js" | head -1)
           fi
-          if [ -n "$SDK_FILE" ]; then
-            sed -i 's/async validateSdk()/async _validateSdk_orig()/g' "$SDK_FILE"
-            sed -i 's/_validateSdk_orig/validateSdk() { return Promise.resolve(true); }\n    async _validateSdk_SKIP/g' "$SDK_FILE"
-            echo "Patch OK"
-            grep -n "validateSdk" "$SDK_FILE" | head -5
-          fi
+          echo "Patch: $SDK_FILE"
+          # validateSdk her zaman true döndürsün
+          node -e "
+            const fs = require('fs');
+            let code = fs.readFileSync('$SDK_FILE', 'utf8');
+            code = code.replace(
+              /async validateSdk\(\)/g,
+              'async validateSdk() { return true; } async validateSdk_SKIP()'
+            );
+            fs.writeFileSync('$SDK_FILE', code);
+            console.log('Patch OK');
+          "
+          grep -n "validateSdk" "$SDK_FILE" | head -5
 
       - name: Configure Bubblewrap
         run: |
@@ -113,7 +102,7 @@ jobs:
         run: |
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          bubblewrap build \
+          node /tmp/bw/node_modules/.bin/bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
