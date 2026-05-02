@@ -86,7 +86,7 @@ jobs:
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
         run: |
-          bubblewrap build \
+          echo "n" | bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
