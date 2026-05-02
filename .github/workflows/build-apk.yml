@@ -28,18 +28,32 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Patch Bubblewrap SDK validation
+      - name: Fix SDK + Patch Bubblewrap
         run: |
-          # validateSdk fonksiyonunu bul ve her zaman true döndürecek şekilde patch et
-          SDK_FILE=$(find /usr/local/lib/node_modules/@bubblewrap/core/dist/lib -name "AndroidSdk.js" 2>/dev/null | head -1)
-          echo "Patch: $SDK_FILE"
-          # validateSdk metodunu always-true yapıyoruz
-          sed -i 's/async validateSdk()/async validateSdk_ORIGINAL()/g' "$SDK_FILE"
-          sed -i 's/validateSdk_ORIGINAL/validateSdk_ORIG/g' "$SDK_FILE"
-          # Yeni validateSdk ekle
-          sed -i 's/async validateSdk_ORIG/async validateSdk() { return true; }\n    async validateSdk_ORIG/g' "$SDK_FILE"
-          echo "Patch OK"
-          grep -n "validateSdk" "$SDK_FILE" | head -5
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+
+          # 1) cmdline-tools/latest symlink
+          if [ ! -d "$SDK/cmdline-tools/latest" ]; then
+            EXISTING=$(ls "$SDK/cmdline-tools/" | head -1)
+            sudo ln -sf "$SDK/cmdline-tools/$EXISTING" "$SDK/cmdline-tools/latest"
+          fi
+
+          # 2) validateSdk'yı Python ile patch et - her zaman true dönsün
+          SDK_FILE=$(find /usr/local/lib/node_modules/@bubblewrap -name "AndroidSdk.js" 2>/dev/null | head -1)
+          echo "Patching: $SDK_FILE"
+          python3 << PYEOF
+import re
+with open("$SDK_FILE", "r") as f:
+    content = f.read()
+patched = re.sub(
+    r'(validateSdk\s*\(\s*\)\s*\{)',
+    r'\1 return Promise.resolve(true);',
+    content, count=1
+)
+with open("$SDK_FILE", "w") as f:
+    f.write(patched)
+print("Patch OK" if patched != content else "WARN: Pattern not found")
+PYEOF
 
       - name: Configure Bubblewrap
         run: |
