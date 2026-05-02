@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,25 +28,35 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Decode Keystore
+      - name: Install Android SDK
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
+          unzip -q /tmp/cmdtools.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
-      - name: Bubblewrap Init
+      - name: Accept SDK licenses & install build tools
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
+
+      - name: Create twa-manifest.json
         run: |
           mkdir -p /tmp/twa-build
-          cd /tmp/twa-build
-          bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json \
-            --directory /tmp/twa-build 2>&1 || true
-
-      - name: Configure twa-manifest.json
-        run: |
-          cat > /tmp/twa-build/twa-manifest.json << 'TWAJSON'
+          cat > /tmp/twa-build/twa-manifest.json << 'EOF'
           {
-            "packageId": "com.unicasoft.karekod",
+            "packageId": "com.unicasoft.unibar",
             "host": "unicasoft.github.io",
-            "name": "Karekod Doğrulayıcı",
-            "launcherName": "Karekod",
+            "name": "UNIBAR",
+            "launcherName": "UNIBAR",
             "display": "standalone",
             "orientation": "portrait",
             "themeColor": "#0a1628",
@@ -59,41 +72,42 @@ jobs:
               "path": "/tmp/karekod.jks",
               "alias": "karekod"
             },
-            "signingKeyPassword": "${{ secrets.KEY_PASSWORD }}",
-            "signingKeyStorePassword": "${{ secrets.KEY_PASSWORD }}",
             "splashScreenFadeOutDuration": 300,
             "enableSiteSettingsShortcut": true,
             "isChromeOSOnly": false,
             "isMetaQuest": false,
             "fullScopeUrl": "https://unicasoft.github.io/ebis/",
-            "minSdkVersion": 19,
+            "minSdkVersion": 21,
             "features": {},
             "alphaDependencies": { "enabled": false },
             "additionalTrustedOrigins": [],
             "shortcuts": []
           }
-          TWAJSON
+          EOF
 
       - name: Bubblewrap Build
+        working-directory: /tmp/twa-build
         run: |
-          cd /tmp/twa-build
-          bubblewrap build \
+          export ANDROID_HOME=$HOME/android-sdk
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          echo "n" | bubblewrap build \
+            --signingKeyPath /tmp/karekod.jks \
+            --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
             --signingKeyStorePassword "${{ secrets.KEY_PASSWORD }}"
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: karekod-apk
+          name: unibar-apk
           path: /tmp/twa-build/app-release-signed.apk
           if-no-files-found: warn
 
       - name: Create Release
-        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: "Karekod APK"
+          name: "UNIBAR APK"
           files: /tmp/twa-build/app-release-signed.apk
           make_latest: true
         env:
