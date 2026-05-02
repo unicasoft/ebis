@@ -28,43 +28,25 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: SDK & JDK Diagnostics
+      - name: Fix Android SDK cmdline-tools structure
         run: |
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          echo "=== ANDROID_HOME: $SDK ==="
-          echo "=== JAVA_HOME: $JAVA_HOME ==="
-          echo "--- java binary ---"
-          ls -la "$JAVA_HOME/bin/java" 2>&1 || echo "NOT FOUND"
-          "$JAVA_HOME/bin/java" -version 2>&1 || echo "java failed"
-          echo "--- SDK build-tools ---"
-          ls "$SDK/build-tools/" 2>/dev/null || echo "build-tools yok"
-          echo "--- aapt2 in build-tools ---"
-          ls "$SDK/build-tools/34.0.0/aapt2" 2>/dev/null || echo "aapt2 yok"
-          echo "--- platforms ---"
-          ls "$SDK/platforms/" 2>/dev/null || echo "platforms yok"
-          echo "--- bubblewrap version ---"
-          bubblewrap --version 2>&1 || true
-
-      - name: Test AndroidSdk validation via Node
-        run: |
-          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          node -e "
-          const path = require('path');
-          const fs = require('fs');
-          const sdk = '$SDK';
-          const jdk = process.env.JAVA_HOME;
-          console.log('SDK:', sdk);
-          console.log('JDK:', jdk);
-          console.log('SDK exists:', fs.existsSync(sdk));
-          console.log('build-tools exists:', fs.existsSync(path.join(sdk,'build-tools')));
-          console.log('platforms exists:', fs.existsSync(path.join(sdk,'platforms')));
-          console.log('java exists:', fs.existsSync(path.join(jdk,'bin','java')));
-          console.log('aapt2 exists:', fs.existsSync(path.join(sdk,'build-tools','34.0.0','aapt2')));
-          const dirs = fs.readdirSync(path.join(sdk,'build-tools'));
-          console.log('build-tools dirs:', dirs);
-          const plats = fs.readdirSync(path.join(sdk,'platforms'));
-          console.log('platforms dirs:', plats);
-          "
+          echo "cmdline-tools içeriği:"
+          ls -la "$SDK/cmdline-tools/" 2>/dev/null || echo "cmdline-tools yok"
+          # Eğer 'latest' yoksa, mevcut versiyonu 'latest' olarak symlink et
+          if [ ! -d "$SDK/cmdline-tools/latest" ]; then
+            echo "'latest' klasörü yok, oluşturuluyor..."
+            EXISTING=$(ls "$SDK/cmdline-tools/" | head -1)
+            echo "Mevcut: $EXISTING"
+            if [ -n "$EXISTING" ]; then
+              ln -sf "$SDK/cmdline-tools/$EXISTING" "$SDK/cmdline-tools/latest"
+              echo "Symlink oluşturuldu: $EXISTING -> latest"
+            fi
+          else
+            echo "'latest' klasörü mevcut"
+          fi
+          echo "sdkmanager binary:"
+          ls -la "$SDK/cmdline-tools/latest/bin/sdkmanager" 2>/dev/null || echo "sdkmanager bulunamadı"
 
       - name: Configure Bubblewrap
         run: |
@@ -110,7 +92,6 @@ jobs:
             "shortcuts": []
           }
           JSONEOF
-          cat /tmp/twa-build/twa-manifest.json
 
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
