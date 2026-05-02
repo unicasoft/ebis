@@ -28,39 +28,24 @@ jobs:
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: Setup Android SDK with correct structure
+      - name: Fix cmdline-tools/latest (sudo)
         run: |
-          RUNNER_SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          MY_SDK="$HOME/my-android-sdk"
-          
-          # Yazılabilir SDK dizini kur
-          mkdir -p "$MY_SDK/cmdline-tools"
-          
-          # cmdline-tools/latest: runner'dakini symlink et
-          LATEST_SRC=$(ls "$RUNNER_SDK/cmdline-tools/" | grep -v "^$" | head -1)
-          echo "Runner cmdline-tools içeriği: $(ls $RUNNER_SDK/cmdline-tools/)"
-          echo "Kullanılacak: $LATEST_SRC"
-          ln -sf "$RUNNER_SDK/cmdline-tools/$LATEST_SRC" "$MY_SDK/cmdline-tools/latest"
-          
-          # build-tools, platforms, platform-tools, licenses symlink
-          ln -sf "$RUNNER_SDK/build-tools"    "$MY_SDK/build-tools"
-          ln -sf "$RUNNER_SDK/platforms"      "$MY_SDK/platforms"
-          ln -sf "$RUNNER_SDK/platform-tools" "$MY_SDK/platform-tools"
-          ln -sf "$RUNNER_SDK/licenses"       "$MY_SDK/licenses"
-          
-          echo "MY_SDK=$MY_SDK" >> $GITHUB_ENV
-          
-          # Doğrula
-          echo "--- MY_SDK yapısı ---"
-          ls -la "$MY_SDK/"
-          echo "--- sdkmanager binary ---"
-          ls -la "$MY_SDK/cmdline-tools/latest/bin/sdkmanager" 2>/dev/null || echo "HATA: sdkmanager bulunamadı"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "cmdline-tools içeriği:"
+          ls "$SDK/cmdline-tools/"
+          if [ ! -d "$SDK/cmdline-tools/latest" ]; then
+            EXISTING=$(ls "$SDK/cmdline-tools/" | grep -v latest | head -1)
+            echo "Symlink: $EXISTING -> latest"
+            sudo ln -sf "$SDK/cmdline-tools/$EXISTING" "$SDK/cmdline-tools/latest"
+          fi
+          echo "sdkmanager:"
+          ls "$SDK/cmdline-tools/latest/bin/sdkmanager" && echo "OK"
 
       - name: Configure Bubblewrap
         run: |
           mkdir -p $HOME/.bubblewrap
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$MY_SDK" > $HOME/.bubblewrap/config.json
-          echo "Config:"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK" > $HOME/.bubblewrap/config.json
           cat $HOME/.bubblewrap/config.json
 
       - name: Decode Keystore
@@ -103,8 +88,8 @@ jobs:
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
         run: |
-          export ANDROID_HOME="$MY_SDK"
-          export ANDROID_SDK_ROOT="$MY_SDK"
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
           bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
