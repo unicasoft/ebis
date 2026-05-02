@@ -20,44 +20,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Bubblewrap locally
+      - name: Install & patch Bubblewrap
         run: |
-          mkdir -p /tmp/bw
-          cd /tmp/bw
-          npm init -y
-          npm install @bubblewrap/cli
-
-      - name: Patch Bubblewrap SDK validation
-        run: |
-          SDK_FILE="/tmp/bw/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
-          if [ ! -f "$SDK_FILE" ]; then
-            # iç içe olabilir
-            SDK_FILE=$(find /tmp/bw/node_modules -name "AndroidSdk.js" | head -1)
+          npm install -g @bubblewrap/cli
+          # AndroidSdk.js'yi bul ve patch et
+          SDK_FILE=$(find / -path "*/bubblewrap/core/dist/lib/AndroidSdk.js" 2>/dev/null | head -1)
+          echo "SDK_FILE: $SDK_FILE"
+          if [ -n "$SDK_FILE" ]; then
+            sed -i 's/async validateSdk()/async validateSdk_ORIG()/g' "$SDK_FILE"
+            sed -i '/async validateSdk_ORIG/i\    async validateSdk() { return true; }' "$SDK_FILE"
+            echo "Patch OK"
           fi
-          echo "Patch: $SDK_FILE"
-          # validateSdk her zaman true döndürsün
-          node -e "
-            const fs = require('fs');
-            let code = fs.readFileSync('$SDK_FILE', 'utf8');
-            code = code.replace(
-              /async validateSdk\(\)/g,
-              'async validateSdk() { return true; } async validateSdk_SKIP()'
-            );
-            fs.writeFileSync('$SDK_FILE', code);
-            console.log('Patch OK');
-          "
-          grep -n "validateSdk" "$SDK_FILE" | head -5
 
       - name: Configure Bubblewrap
         run: |
           mkdir -p $HOME/.bubblewrap
-          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK" > $HOME/.bubblewrap/config.json
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > $HOME/.bubblewrap/config.json
           cat $HOME/.bubblewrap/config.json
 
       - name: Decode Keystore
@@ -100,9 +86,7 @@ jobs:
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
         run: |
-          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          node /tmp/bw/node_modules/.bin/bubblewrap build \
+          bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
