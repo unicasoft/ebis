@@ -103,7 +103,15 @@ jobs:
             expect {
               eof     { break }
               timeout { break }
-              -re {\?} { send "\r"; sleep 0.1 }
+              "Key store location:" { send "/tmp/karekod.jks\r"; sleep 0.2 }
+              "Key name:"           { send "karekod\r"; sleep 0.2 }
+              "First and Last"      { send "Unicasoft\r"; sleep 0.2 }
+              "Organizational unit" { send "Dev\r"; sleep 0.2 }
+              "Organization:"       { send "Unicasoft\r"; sleep 0.2 }
+              "City"                { send "Istanbul\r"; sleep 0.2 }
+              "State"               { send "Istanbul\r"; sleep 0.2 }
+              "Country"             { send "TR\r"; sleep 0.2 }
+              -re {\?}             { send "\r"; sleep 0.1 }
             }
           }
           EXPECTEOF
