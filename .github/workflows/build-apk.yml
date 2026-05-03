@@ -95,8 +95,18 @@ jobs:
         working-directory: /tmp/twa-build
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap init başlıyor..."
-          # yes komutu tüm soruları Enter ile geçer
-          yes "" | bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json || true
+          sudo apt-get install -y expect -q
+          expect << 'EXPECTEOF'
+          set timeout 120
+          spawn bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json
+          while 1 {
+            expect {
+              eof     { break }
+              timeout { break }
+              -re {\?} { send "\r"; sleep 0.1 }
+            }
+          }
+          EXPECTEOF
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Init tamamlandı, dosyalar:"
           ls -la /tmp/twa-build/
 
