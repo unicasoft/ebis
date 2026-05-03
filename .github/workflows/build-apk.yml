@@ -86,11 +86,22 @@ jobs:
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
         run: |
-          printf 'n\n${{ secrets.KEY_PASSWORD }}\n${{ secrets.KEY_PASSWORD }}\n' | bubblewrap build \
+          sudo apt-get install -y expect -q
+          expect << 'EXPECTEOF'
+          set timeout 300
+          spawn bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
             --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
             --signingKeyStorePassword "${{ secrets.KEY_PASSWORD }}"
+          expect "Y/n"
+          send "n\r"
+          expect "Key Store:"
+          send "${{ secrets.KEY_PASSWORD }}\r"
+          expect "alias karekod:"
+          send "${{ secrets.KEY_PASSWORD }}\r"
+          expect eof
+          EXPECTEOF
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
