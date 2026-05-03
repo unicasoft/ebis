@@ -518,7 +518,7 @@ function applyLang(){
 function toggleLang(){
   _lang=(_lang==="tr"?"en":"tr");
   localStorage.setItem("ub_lang",_lang);
-  applyLang();
+  location.reload(); // Reload page to apply language
 }
 document.addEventListener("DOMContentLoaded",applyLang);
 </script>
