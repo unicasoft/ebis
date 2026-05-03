@@ -35,14 +35,14 @@ jobs:
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap kuruluyor..."
           npm install -g @bubblewrap/cli
           NPM_PREFIX=$(npm prefix -g)
-          SDK_FILE="$NPM_PREFIX/lib/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
+          SDK_FILE=$(find "$NPM_PREFIX/lib/node_modules" -name "AndroidSdk.js" -path "*/bubblewrap/core/dist/lib/*" 2>/dev/null | head -1)
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] SDK_FILE: $SDK_FILE"
-          if [ -f "$SDK_FILE" ]; then
+          if [ -n "$SDK_FILE" ] && [ -f "$SDK_FILE" ]; then
             sed -i 's/async validateSdk()/async validateSdk_ORIG()/g' "$SDK_FILE"
             sed -i '/async validateSdk_ORIG/i\    async validateSdk() { return true; }' "$SDK_FILE"
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Patch OK"
           else
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] SDK_FILE bulunamadi!"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] SDK_FILE bulunamadi! NPM_PREFIX: $NPM_PREFIX"
           fi
 
       - name: Configure Bubblewrap
@@ -128,13 +128,16 @@ jobs:
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap build başlıyor (build #${{ github.run_number }})..."
           NPM_PREFIX=$(npm prefix -g)
-          SDK_FILE="$NPM_PREFIX/lib/node_modules/@bubblewrap/core/dist/lib/AndroidSdk.js"
-          if [ -f "$SDK_FILE" ]; then
+          SDK_FILE=$(find "$NPM_PREFIX/lib/node_modules" -name "AndroidSdk.js" -path "*/bubblewrap/core/dist/lib/*" 2>/dev/null | head -1)
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build SDK_FILE: $SDK_FILE"
+          if [ -n "$SDK_FILE" ] && [ -f "$SDK_FILE" ]; then
             grep -q "validateSdk_ORIG" "$SDK_FILE" || {
               sed -i 's/async validateSdk()/async validateSdk_ORIG()/g' "$SDK_FILE"
               sed -i '/async validateSdk_ORIG/i\    async validateSdk() { return true; }' "$SDK_FILE"
               echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build patch OK"
             }
+          else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build SDK_FILE bulunamadi!"
           fi
           expect << 'EXPECTEOF'
           set timeout 600
