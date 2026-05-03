@@ -83,12 +83,24 @@ jobs:
           }
           JSONEOF
 
-      - name: Bubblewrap Build
+      - name: Bubblewrap Init
         working-directory: /tmp/twa-build
         run: |
           sudo apt-get install -y expect -q
           expect << 'EXPECTEOF'
           set timeout 300
+          spawn bubblewrap init --manifest /tmp/twa-build/twa-manifest.json
+          expect "Y/n"
+          send "n\r"
+          expect eof
+          EXPECTEOF
+          ls -la /tmp/twa-build/
+
+      - name: Bubblewrap Build
+        working-directory: /tmp/twa-build
+        run: |
+          expect << 'EXPECTEOF'
+          set timeout 600
           spawn bubblewrap build \
             --signingKeyPath /tmp/karekod.jks \
             --signingKeyAlias karekod \
