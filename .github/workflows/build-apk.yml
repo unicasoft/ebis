@@ -125,51 +125,53 @@ jobs:
 
       - name: Gradle Build & Sign
         working-directory: /tmp/twa-build
+        env:
+          SIGNING_STORE_FILE: /tmp/karekod.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_KEY_ALIAS: karekod
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Gradle build başlıyor..."
-          # gradle.properties'e signing bilgilerini yaz
-          cat >> gradle.properties << EOF
-          STORE_FILE=/tmp/karekod.jks
-          STORE_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS=karekod
-          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          EOF
           # app/build.gradle'a signingConfig ekle
           python3 - << 'PYEOF'
-          import re
+          import os
           with open('app/build.gradle', 'r') as f:
-              content = f.read()
-          signing_configs = '''
-              signingConfigs {
-                  release {
-                      storeFile file(STORE_FILE)
-                      storePassword STORE_PASSWORD
-                      keyAlias KEY_ALIAS
-                      keyPassword KEY_PASSWORD
-                  }
-              }
-          '''
-          # buildTypes içine signingConfig ekle
-          content = content.replace(
-              'buildTypes {',
-              signing_configs + '    buildTypes {'
-          )
-          content = content.replace(
-              'release {',
-              'release {\n            signingConfig signingConfigs.release',
-              1
-          )
+              lines = f.readlines()
+          
+          # buildTypes bölümünü bul
+          new_lines = []
+          for i, line in enumerate(lines):
+              if 'buildTypes {' in line:
+                  new_lines.append(line)
+                  # signingConfigs ekle (buildTypes'dan önce)
+                  new_lines.insert(len(new_lines)-1, '''    signingConfigs {
+        release {
+            storeFile = file(System.getenv("SIGNING_STORE_FILE") ?: "android.keystore")
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+        }
+    }
+''')
+              elif 'release {' in line and 'buildTypes' in ''.join(lines[max(0,i-10):i]):
+                  new_lines.append(line)
+                  # signingConfig ekle
+                  indent = len(line) - len(line.lstrip())
+                  new_lines.append(' ' * (indent + 4) + 'signingConfig signingConfigs.release\n')
+              else:
+                  new_lines.append(line)
+          
           with open('app/build.gradle', 'w') as f:
-              f.write(content)
-          print("build.gradle patched")
+              f.writelines(new_lines)
+          print("build.gradle patched with signingConfig")
           PYEOF
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon 2>&1
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build tamamlandı"
           find /tmp/twa-build -name "*.apk" 2>/dev/null
           # APK'yı beklenen konuma kopyala
-          APK=$(find /tmp/twa-build -name "*.apk" | head -1)
-          [ -n "$APK" ] && cp "$APK" /tmp/twa-build/app-release-signed.apk || echo "APK bulunamadı"
+          APK=$(find /tmp/twa-build -name "*.apk" | grep -E "(release|signed)" | head -1)
+          [ -n "$APK" ] && cp "$APK" /tmp/twa-build/app-release-signed.apk && echo "APK: $APK" || echo "APK bulunamadı"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
