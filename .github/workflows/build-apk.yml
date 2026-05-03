@@ -95,25 +95,25 @@ jobs:
         working-directory: /tmp/twa-build
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap init başlıyor..."
+          # Keystoremizi init'in default konumuna kopyala → keystore creation wizard AÇILMAZ
+          cp /tmp/karekod.jks /tmp/twa-build/android.keystore
           sudo apt-get install -y expect -q
           expect << 'EXPECTEOF'
-          set timeout 120
+          set timeout 60
           spawn bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json
           while 1 {
             expect {
               eof     { break }
               timeout { break }
-              "Key store location:" { send "/tmp/karekod.jks\r"; sleep 0.2 }
-              "Key name:"           { send "karekod\r"; sleep 0.2 }
-              "Password for the Key Store:" { send "${{ secrets.KEY_PASSWORD }}\r"; sleep 0.2 }
-              "Password for the Key:"       { send "${{ secrets.KEY_PASSWORD }}\r"; sleep 0.2 }
-              "First and Last"      { send "Unicasoft\r"; sleep 0.2 }
-              "Organizational unit" { send "Dev\r"; sleep 0.2 }
-              "Organization:"       { send "Unicasoft\r"; sleep 0.2 }
-              "City"                { send "Istanbul\r"; sleep 0.2 }
-              "State"               { send "Istanbul\r"; sleep 0.2 }
-              "Country"             { send "TR\r"; sleep 0.2 }
-              -re {\?}             { send "\r"; sleep 0.1 }
+              "Key store location:"         { send "\r"; sleep 0.3 }
+              "Key name:"                   { send "karekod\r"; sleep 0.3 }
+              "Password for the Key Store:" { sleep 2.0; send "${{ secrets.KEY_PASSWORD }}\r"; sleep 1.0 }
+              "Password for the Key:"       { sleep 1.0; send "${{ secrets.KEY_PASSWORD }}\r"; sleep 1.0 }
+              "First and Last"              { send "Unicasoft\r"; sleep 0.3 }
+              "Organizational Unit"         { send "Dev\r"; sleep 0.3 }
+              "Organization (eg"            { send "Unicasoft\r"; sleep 0.3 }
+              "Country (2 letter"           { send "\025TR\r"; sleep 0.5 }
+              -re {\?}                     { send "\r"; sleep 0.2 }
             }
           }
           EXPECTEOF
