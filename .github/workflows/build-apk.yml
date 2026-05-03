@@ -123,41 +123,53 @@ jobs:
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Init tamamlandı, dosyalar:"
           ls -la /tmp/twa-build/
 
-      - name: Bubblewrap Build
+      - name: Gradle Build & Sign
         working-directory: /tmp/twa-build
         run: |
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap build başlıyor (build #${{ github.run_number }})..."
-          NPM_PREFIX=$(npm prefix -g)
-          SDK_FILE=$(find "$NPM_PREFIX/lib/node_modules" -name "AndroidSdk.js" -path "*/bubblewrap/core/dist/lib/*" 2>/dev/null | head -1)
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build SDK_FILE: $SDK_FILE"
-          if [ -n "$SDK_FILE" ] && [ -f "$SDK_FILE" ]; then
-            grep -q "validateSdk_ORIG" "$SDK_FILE" || {
-              sed -i 's/async validateSdk()/async validateSdk_ORIG()/g' "$SDK_FILE"
-              sed -i '/async validateSdk_ORIG/i\    async validateSdk() { return true; }' "$SDK_FILE"
-              echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build patch OK"
-            }
-          else
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build SDK_FILE bulunamadi!"
-          fi
-          expect << 'EXPECTEOF'
-          set timeout 600
-          spawn bubblewrap build \
-            --signingKeyPath /tmp/karekod.jks \
-            --signingKeyAlias karekod \
-            --signingKeyPassword "${{ secrets.KEY_PASSWORD }}" \
-            --signingKeyStorePassword "${{ secrets.KEY_PASSWORD }}"
-          while 1 {
-            expect {
-              eof          { break }
-              timeout      { break }
-              "Y/n"        { send "n\r" }
-              "Key Store:" { sleep 0.5; send "${{ secrets.KEY_PASSWORD }}\r" }
-              "karekod:"   { sleep 0.5; send "${{ secrets.KEY_PASSWORD }}\r" }
-            }
-          }
-          EXPECTEOF
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Gradle build başlıyor..."
+          # gradle.properties'e signing bilgilerini yaz
+          cat >> gradle.properties << EOF
+          STORE_FILE=/tmp/karekod.jks
+          STORE_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS=karekod
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+          # app/build.gradle'a signingConfig ekle
+          python3 - << 'PYEOF'
+          import re
+          with open('app/build.gradle', 'r') as f:
+              content = f.read()
+          signing_configs = '''
+              signingConfigs {
+                  release {
+                      storeFile file(STORE_FILE)
+                      storePassword STORE_PASSWORD
+                      keyAlias KEY_ALIAS
+                      keyPassword KEY_PASSWORD
+                  }
+              }
+          '''
+          # buildTypes içine signingConfig ekle
+          content = content.replace(
+              'buildTypes {',
+              signing_configs + '    buildTypes {'
+          )
+          content = content.replace(
+              'release {',
+              'release {\n            signingConfig signingConfigs.release',
+              1
+          )
+          with open('app/build.gradle', 'w') as f:
+              f.write(content)
+          print("build.gradle patched")
+          PYEOF
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon 2>&1
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build tamamlandı"
-          ls -la /tmp/twa-build/*.apk 2>/dev/null || echo "APK bulunamadı"
+          find /tmp/twa-build -name "*.apk" 2>/dev/null
+          # APK'yı beklenen konuma kopyala
+          APK=$(find /tmp/twa-build -name "*.apk" | head -1)
+          [ -n "$APK" ] && cp "$APK" /tmp/twa-build/app-release-signed.apk || echo "APK bulunamadı"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
