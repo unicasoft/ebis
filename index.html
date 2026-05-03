@@ -485,7 +485,7 @@ var LANG={
 };
 var _lang=(function(){
   var s=localStorage.getItem("ub_lang"); if(s) return s;
-  return (navigator.language||"tr").toLowerCase().startsWith("tr")?"tr":"en";
+  return "en"; // Default to English
 })();
 function T(k){return (LANG[_lang]||LANG.tr)[k]||k;}
 function applyLang(){
