@@ -105,6 +105,8 @@ jobs:
               timeout { break }
               "Key store location:" { send "/tmp/karekod.jks\r"; sleep 0.2 }
               "Key name:"           { send "karekod\r"; sleep 0.2 }
+              "Password for the Key Store:" { send "${{ secrets.KEY_PASSWORD }}\r"; sleep 0.2 }
+              "Password for the Key:"       { send "${{ secrets.KEY_PASSWORD }}\r"; sleep 0.2 }
               "First and Last"      { send "Unicasoft\r"; sleep 0.2 }
               "Organizational unit" { send "Dev\r"; sleep 0.2 }
               "Organization:"       { send "Unicasoft\r"; sleep 0.2 }
