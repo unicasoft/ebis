@@ -30,29 +30,34 @@ jobs:
 
       - name: Install & patch Bubblewrap
         run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap kuruluyor..."
           npm install -g @bubblewrap/cli
-          # AndroidSdk.js'yi bul ve patch et
           SDK_FILE=$(find / -path "*/bubblewrap/core/dist/lib/AndroidSdk.js" 2>/dev/null | head -1)
-          echo "SDK_FILE: $SDK_FILE"
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] SDK_FILE: $SDK_FILE"
           if [ -n "$SDK_FILE" ]; then
             sed -i 's/async validateSdk()/async validateSdk_ORIG()/g' "$SDK_FILE"
             sed -i '/async validateSdk_ORIG/i\    async validateSdk() { return true; }' "$SDK_FILE"
-            echo "Patch OK"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Patch OK"
           fi
 
       - name: Configure Bubblewrap
         run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap yapılandırılıyor..."
           mkdir -p $HOME/.bubblewrap
           printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_SDK_ROOT" > $HOME/.bubblewrap/config.json
-          cat $HOME/.bubblewrap/config.json
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Config: $(cat $HOME/.bubblewrap/config.json)"
 
       - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
+        run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Keystore çözülüyor..."
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/karekod.jks
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Keystore hazır"
 
       - name: Create twa-manifest.json
         run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] twa-manifest.json oluşturuluyor (build #${{ github.run_number }})..."
           mkdir -p /tmp/twa-build
-          cat > /tmp/twa-build/twa-manifest.json << 'JSONEOF'
+          cat > /tmp/twa-build/twa-manifest.json << JSONEOF
           {
             "packageId": "com.unicasoft.unibar",
             "host": "unicasoft.github.io",
@@ -67,8 +72,8 @@ jobs:
             "startUrl": "/ebis/",
             "iconUrl": "https://unicasoft.github.io/ebis/icons/icon-512.png",
             "maskableIconUrl": "https://unicasoft.github.io/ebis/icons/icon-maskable.png",
-            "appVersion": "32",
-            "appVersionCode": 32,
+            "appVersion": "${{ github.run_number }}",
+            "appVersionCode": ${{ github.run_number }},
             "signingKey": {"path": "/tmp/karekod.jks", "alias": "karekod"},
             "splashScreenFadeOutDuration": 300,
             "enableSiteSettingsShortcut": true,
@@ -82,37 +87,41 @@ jobs:
             "shortcuts": []
           }
           JSONEOF
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Manifest hazır: appVersionCode=${{ github.run_number }}"
 
       - name: Bubblewrap Init
         working-directory: /tmp/twa-build
         run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap init başlıyor..."
           sudo apt-get install -y expect -q
           expect << 'EXPECTEOF'
           set timeout 60
           spawn bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json
           expect {
-            "Y/n" { send "\r"; exp_continue }
-            "Domain:" { send "\r"; exp_continue }
-            "URL path:" { send "\r"; exp_continue }
+            "Y/n"            { send "\r"; exp_continue }
+            "Domain:"        { send "\r"; exp_continue }
+            "URL path:"      { send "\r"; exp_continue }
             "Application name" { send "\r"; exp_continue }
-            "Short name" { send "\r"; exp_continue }
-            "Display mode" { send "\r"; exp_continue }
-            "Orientation" { send "\r"; exp_continue }
-            "Theme color" { send "\r"; exp_continue }
+            "Short name"     { send "\r"; exp_continue }
+            "Display mode"   { send "\r"; exp_continue }
+            "Orientation"    { send "\r"; exp_continue }
+            "Theme color"    { send "\r"; exp_continue }
             "Background color" { send "\r"; exp_continue }
-            "Start URL" { send "\r"; exp_continue }
-            "Splash screen" { send "\r"; exp_continue }
-            "notification" { send "\r"; exp_continue }
-            "Site settings" { send "\r"; exp_continue }
-            "generated" { send "\r"; exp_continue }
+            "Start URL"      { send "\r"; exp_continue }
+            "Splash screen"  { send "\r"; exp_continue }
+            "notification"   { send "\r"; exp_continue }
+            "Site settings"  { send "\r"; exp_continue }
+            "generated"      { send "\r"; exp_continue }
             eof
           }
           EXPECTEOF
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Init tamamlandı, dosyalar:"
           ls -la /tmp/twa-build/
 
       - name: Bubblewrap Build
         working-directory: /tmp/twa-build
         run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bubblewrap build başlıyor (build #${{ github.run_number }})..."
           expect << 'EXPECTEOF'
           set timeout 600
           spawn bubblewrap build \
@@ -128,11 +137,13 @@ jobs:
           send "${{ secrets.KEY_PASSWORD }}\r"
           expect eof
           EXPECTEOF
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build tamamlandı"
+          ls -la /tmp/twa-build/*.apk 2>/dev/null || echo "APK bulunamadı"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: unibar-apk
+          name: unibar-apk-${{ github.run_number }}
           path: /tmp/twa-build/app-release-signed.apk
           if-no-files-found: warn
 
@@ -140,7 +151,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: "UNIBAR APK"
+          name: "UNIBAR APK (build #${{ github.run_number }})"
+          body: "Build #${{ github.run_number }} | Run ID: ${{ github.run_id }}"
           files: /tmp/twa-build/app-release-signed.apk
           make_latest: true
         env:
