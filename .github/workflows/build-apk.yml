@@ -132,46 +132,52 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Gradle build başlıyor..."
-          # app/build.gradle'a signingConfig ekle
-          python3 - << 'PYEOF'
-          import os
+          cat > patch.py << 'PYSCRIPT'
+          import re
           with open('app/build.gradle', 'r') as f:
-              lines = f.readlines()
+              content = f.read()
           
-          # buildTypes bölümünü bul
-          new_lines = []
-          for i, line in enumerate(lines):
-              if 'buildTypes {' in line:
-                  new_lines.append(line)
-                  # signingConfigs ekle (buildTypes'dan önce)
-                  new_lines.insert(len(new_lines)-1, '''    signingConfigs {
-        release {
-            storeFile = file(System.getenv("SIGNING_STORE_FILE") ?: "android.keystore")
-            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-        }
-    }
-''')
-              elif 'release {' in line and 'buildTypes' in ''.join(lines[max(0,i-10):i]):
-                  new_lines.append(line)
-                  # signingConfig ekle
-                  indent = len(line) - len(line.lstrip())
-                  new_lines.append(' ' * (indent + 4) + 'signingConfig signingConfigs.release\n')
-              else:
-                  new_lines.append(line)
+          # android { sonrasına signingConfigs ekle
+          signing = '''    signingConfigs {
+              release {
+                  storeFile = file(System.getenv("SIGNING_STORE_FILE") ?: "android.keystore")
+                  storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                  keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                  keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+              }
+          }
+  '''
+          content = content.replace('android {', 'android {\n' + signing, 1)
+          
+          # buildTypes release içine signingConfig ekle
+          content = re.sub(
+              r'(buildTypes\s*\{[^}]*release\s*\{)',
+              r'\1\n            signingConfig = signingConfigs.release',
+              content
+          )
           
           with open('app/build.gradle', 'w') as f:
-              f.writelines(new_lines)
-          print("build.gradle patched with signingConfig")
-          PYEOF
+              f.write(content)
+          print("Gradle patched")
+          PYSCRIPT
+          
+          python3 patch.py
+          echo "=== Signing config ==="
+          grep -A 7 "signingConfigs" app/build.gradle | head -8
+          
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon 2>&1
+          ./gradlew assembleRelease --no-daemon
+          
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build tamamlandı"
-          find /tmp/twa-build -name "*.apk" 2>/dev/null
-          # APK'yı beklenen konuma kopyala
-          APK=$(find /tmp/twa-build -name "*.apk" | grep -E "(release|signed)" | head -1)
-          [ -n "$APK" ] && cp "$APK" /tmp/twa-build/app-release-signed.apk && echo "APK: $APK" || echo "APK bulunamadı"
+          find /tmp/twa-build -name "*.apk"
+          
+          APK=$(find /tmp/twa-build -name "*release*.apk" | head -1)
+          if [ -n "$APK" ]; then
+            cp "$APK" /tmp/twa-build/app-release-signed.apk
+            echo "APK: $APK"
+          else
+            echo "APK bulunamadı"
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
