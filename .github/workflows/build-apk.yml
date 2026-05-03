@@ -88,11 +88,25 @@ jobs:
         run: |
           sudo apt-get install -y expect -q
           expect << 'EXPECTEOF'
-          set timeout 300
+          set timeout 60
           spawn bubblewrap init --manifest https://unicasoft.github.io/ebis/manifest.json
-          expect "Y/n"
-          send "n\r"
-          expect eof
+          expect {
+            "Y/n" { send "\r"; exp_continue }
+            "Domain:" { send "\r"; exp_continue }
+            "URL path:" { send "\r"; exp_continue }
+            "Application name" { send "\r"; exp_continue }
+            "Short name" { send "\r"; exp_continue }
+            "Display mode" { send "\r"; exp_continue }
+            "Orientation" { send "\r"; exp_continue }
+            "Theme color" { send "\r"; exp_continue }
+            "Background color" { send "\r"; exp_continue }
+            "Start URL" { send "\r"; exp_continue }
+            "Splash screen" { send "\r"; exp_continue }
+            "notification" { send "\r"; exp_continue }
+            "Site settings" { send "\r"; exp_continue }
+            "generated" { send "\r"; exp_continue }
+            eof
+          }
           EXPECTEOF
           ls -la /tmp/twa-build/
 
