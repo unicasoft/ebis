@@ -128,7 +128,6 @@ jobs:
         run: |
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Gradle build başlıyor..."
           
-          # gradle.properties'e signing bilgileri ekle
           cat >> gradle.properties <<EOF
           STORE_FILE=/tmp/karekod.jks
           STORE_PASSWORD=${{ secrets.KEY_PASSWORD }}
@@ -136,27 +135,10 @@ jobs:
           KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
           EOF
           
-          # build.gradle patch - inline Python
-          python3 -c "
-          import re
-          f = open('app/build.gradle', 'r')
-          c = f.read()
-          f.close()
-          c = c.replace('android {', '''android {
-      signingConfigs {
-          release {
-              storeFile file(STORE_FILE)
-              storePassword STORE_PASSWORD
-              keyAlias KEY_ALIAS
-              keyPassword KEY_PASSWORD
-          }
-      }
-  ''', 1)
-          c = re.sub(r'(buildTypes\s*\{[^}]*release\s*\{)', r'\1\n            signingConfig signingConfigs.release', c)
-          f = open('app/build.gradle', 'w')
-          f.write(c)
-          f.close()
-          "
+          sed -i '/android {/a\    signingConfigs {\n        release {\n            storeFile file(STORE_FILE)\n            storePassword STORE_PASSWORD\n            keyAlias KEY_ALIAS\n            keyPassword KEY_PASSWORD\n        }\n    }' app/build.gradle
+          
+          sed -i '/buildTypes {/,/release {/{/release {/a\            signingConfig signingConfigs.release
+          }' app/build.gradle
           
           echo "=== Signing config ==="
           grep -A 6 "signingConfigs" app/build.gradle | head -7
@@ -165,7 +147,6 @@ jobs:
           ./gradlew assembleRelease --no-daemon
           
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] Build tamamlandı"
-          find /tmp/twa-build -name "*.apk"
           
           APK=$(find /tmp/twa-build/app/build/outputs/apk -name "*.apk" | head -1)
           if [ -n "$APK" ]; then
@@ -173,6 +154,7 @@ jobs:
             ls -lh /tmp/twa-build/app-release-signed.apk
           else
             echo "APK bulunamadı"
+            find /tmp/twa-build -name "*.apk"
           fi
 
       - name: Upload APK
