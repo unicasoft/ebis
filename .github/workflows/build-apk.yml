@@ -157,6 +157,47 @@ jobs:
             find /tmp/twa-build -name "*.apk"
           fi
 
+      - name: Update assetlinks.json with APK SHA-256
+        run: |
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] APK'dan gerçek SHA-256 çıkarılıyor..."
+          # APK'nın imza fingerprint'ini çıkar (gerçek değer)
+          APKSIGNER=$(find /usr/local/lib/android/sdk/build-tools -name "apksigner" | head -1)
+          SHA256=$($APKSIGNER verify --print-certs /tmp/twa-build/app-release-signed.apk | grep -i "SHA-256" | head -1 | awk -F': ' '{print $2}' | tr 'a-f' 'A-F' | sed 's/\(..\)/\1:/g; s/:$//')
+          echo "Gerçek SHA-256: $SHA256"
+
+          # APK'dan gerçek package name'i çıkar
+          AAPT=$(find /usr/local/lib/android/sdk/build-tools -name "aapt" | head -1)
+          PKG=$($AAPT dump badging /tmp/twa-build/app-release-signed.apk | grep package | awk '{print $2}' | sed "s/name=//;s/'//g")
+          echo "Gerçek package name: $PKG"
+
+          # Repo'daki assetlinks.json'u güncelle
+          cd $GITHUB_WORKSPACE
+          cat > .well-known/assetlinks.json << EOF
+          [{
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+              "namespace": "android_app",
+              "package_name": "$PKG",
+              "sha256_cert_fingerprints": ["$SHA256"]
+            }
+          }]
+          EOF
+          
+          echo "=== Güncellenen assetlinks.json ==="
+          cat .well-known/assetlinks.json
+          
+          # Eğer değişiklik varsa commit et
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .well-known/assetlinks.json
+          if ! git diff --staged --quiet; then
+            git commit -m "auto: update assetlinks.json with APK SHA-256 [skip ci]"
+            git push origin main
+            echo "✅ assetlinks.json güncellendi ve push edildi"
+          else
+            echo "ℹ️ assetlinks.json zaten güncel"
+          fi
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
