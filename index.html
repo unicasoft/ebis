@@ -452,7 +452,7 @@ var LANG={
     imgDrop:"Sürükle & Bırak",imgOr:"veya",imgBrowse:"Dosya Seç",imgClear:"✕ Resmi Temizle",
     resCopy:"📋 Kopyala",resShare:"🔗 Paylaş",resNew:"↺ Yeni Tarama / Sıfırla",
     drTitle:"UNIBAR",drScan:"Tara",drImg:"Görüntü Tarama",drText:"Metin Doğrula",
-    drHist:"Geçmiş",drCopy:"Kopyala",drShare:"Paylaş",drClrHist:"Geçmişi Temizle",
+    drFavs:"Favoriler",drHist:"Geçmiş",drCopy:"Kopyala",drShare:"Paylaş",drClrHist:"Geçmişi Temizle",
     drValPh:"EBİS, GİB JSON, URL, barkod içeriği…\n\nYapıştırın ve Doğrula’ya basın.",
     drValBtn:"Doğrula →",histTitle:"🕐 Geçmiş",favTitle:"★ Favoriler",
     listClr:"🗑 Listeyi Temizle",
@@ -471,8 +471,8 @@ var LANG={
     camHint:"🔍 Align QR in frame · Zoom in",
     imgDrop:"Drag & Drop",imgOr:"or",imgBrowse:"Choose File",imgClear:"✕ Clear Image",
     resCopy:"📋 Copy",resShare:"🔗 Share",resNew:"↺ New Scan / Reset",
-    drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Validate Text",
-    drHist:"History",drCopy:"Copy",drShare:"Share",drClrHist:"Clear History",
+    drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Verify Text",
+    drFavs:"Favorites",drHist:"History",drCopy:"Copy",drShare:"Share",drClrHist:"Clear History",
     drValPh:"EBİS, GİB JSON, URL, barcode content…\n\nPaste and press Validate.",
     drValBtn:"Validate →",histTitle:"🕐 History",favTitle:"★ Favorites",
     listClr:"🗑 Clear List",
@@ -514,6 +514,13 @@ function applyLang(){
     else if(i===1) b.textContent=L.resShare;
   });
   var rescan=document.querySelector(".btnrs"); if(rescan) rescan.textContent=L.resNew;
+  // Generic [data-i18n] elements update (drawer + dynamic items)
+  document.querySelectorAll("[data-i18n]").forEach(function(el){
+    var k=el.getAttribute("data-i18n");
+    if(L[k]) el.textContent=L[k];
+  });
+  // Camera hint
+  var chint=document.querySelector(".camhint"); if(chint) chint.textContent=L.camHint;
 }
 function toggleLang(){
   _lang=(_lang==="tr"?"en":"tr");
@@ -586,7 +593,7 @@ document.addEventListener("DOMContentLoaded",applyLang);
 <main>
   <div class="modtabs">
     <div class="mtab on" id="t-cam" onclick="swMode('cam')">
-      <span class="mtab-i">📷</span><span class="mtab-l">Kamera ile Tara</span>
+      <span class="mtab-i">📷</span><span class="mtab-l" data-i18n="tabCam">Scan with Camera</span>
     </div>
     <div class="mtab" id="t-img" onclick="swMode('img')">
       <span class="mtab-i">🖼️</span><span class="mtab-l">Resimden Oku</span>
@@ -621,7 +628,7 @@ document.addEventListener("DOMContentLoaded",applyLang);
           <button class="btnp" id="btnstart" onclick="startCam()">Kamerayı Başlat</button>
         </div>
         <canvas id="multi-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:20;touch-action:none;cursor:pointer;"></canvas>
-        <div class="camhint" id="camhint" style="display:none">🔍 Place QR in frame · Yaklaştır</div>
+        <div class="camhint" id="camhint" style="display:none">🔍 Align QR in frame · Zoom in</div>
       </div>
       <button class="bstop" id="bstop" onclick="stopCam()">■ Durdur</button>
       <div id="cam-multi-bar" style="display:none"></div>
@@ -644,7 +651,7 @@ document.addEventListener("DOMContentLoaded",applyLang);
           <img id="imgprev" alt="Önizleme">
           <div class="prev-ov" id="spinov" style="display:none"><div class="spinner"></div></div>
         </div>
-        <button class="bclr" id="bclr" onclick="clrImg()" style="display:none">✕ Resmi Temizle</button>
+        <button class="bclr" id="bclr" onclick="clrImg()" style="display:none"><span data-i18n="imgClear">✕ Clear Image</span></button>
         <div id="multi-img-sel"></div>
       </div>
     </div>
@@ -687,10 +694,10 @@ document.addEventListener("DOMContentLoaded",applyLang);
       </div>
     </div>
     <div class="result-actions">
-      <button class="ra-btn" onclick="raCopy()">📋 Kopyala</button>
-      <button class="ra-btn" onclick="raShare()">🔗 Paylaş</button>
+      <button class="ra-btn" onclick="raCopy()" data-i18n="resCopy">📋 Copy</button>
+      <button class="ra-btn" onclick="raShare()" data-i18n="resShare">🔗 Share</button>
     </div>
-    <button class="btnrs" onclick="rescan()">↺ Yeni Tarama / Sıfırla</button>
+    <button class="btnrs" onclick="rescan()" data-i18n="resNew">↺ New Scan / Reset</button>
   </div>
   <!-- TÜMÜ SEÇ: numaralı yığın liste -->
   <div id="all-codes-sec" style="display:none"></div>
@@ -726,17 +733,17 @@ document.addEventListener("DOMContentLoaded",applyLang);
     <button class="dr-close" onclick="closeDrawer()">✕</button>
   </div>
   <div class="dr-menu">
-    <div class="dr-item" onclick="drAction('scan')"><span class="dr-ic">📷</span>Tara</div>
-    <div class="dr-item" onclick="drAction('img')"><span class="dr-ic">🖼</span>Görüntü Tarama</div>
-    <div class="dr-item" onclick="drAction('text')"><span class="dr-ic">⌨</span>Metin Doğrula</div>
+    <div class="dr-item" onclick="drAction('scan')"><span class="dr-ic">📷</span><span data-i18n="drScan">Scan</span></div>
+    <div class="dr-item" onclick="drAction('img')"><span class="dr-ic">🖼</span><span data-i18n="drImg">Image Scan</span></div>
+    <div class="dr-item" onclick="drAction('text')"><span class="dr-ic">⌨</span><span data-i18n="drText">Verify Text</span></div>
     <div class="dr-sep"></div>
-    <div class="dr-item" onclick="drAction('favs')"><span class="dr-ic">⭐</span>Favoriler</div>
-    <div class="dr-item" onclick="drAction('hist')"><span class="dr-ic">🕐</span>Geçmiş</div>
+    <div class="dr-item" onclick="drAction('favs')"><span class="dr-ic">⭐</span><span data-i18n="drFavs">Favorites</span></div>
+    <div class="dr-item" onclick="drAction('hist')"><span class="dr-ic">🕐</span><span data-i18n="drHist">History</span></div>
     <div class="dr-sep"></div>
-    <div class="dr-item" onclick="drAction('copy')"><span class="dr-ic">📋</span>Kopyala</div>
-    <div class="dr-item" onclick="drAction('share')"><span class="dr-ic">🔗</span>Paylaş</div>
+    <div class="dr-item" onclick="drAction('copy')"><span class="dr-ic">📋</span><span data-i18n="drCopy">Copy</span></div>
+    <div class="dr-item" onclick="drAction('share')"><span class="dr-ic">🔗</span><span data-i18n="drShare">Share</span></div>
     <div class="dr-sep"></div>
-    <div class="dr-item" onclick="drAction('clrhist')"><span class="dr-ic">🗑</span>Geçmişi Temizle</div>
+    <div class="dr-item" onclick="drAction('clrhist')"><span class="dr-ic">🗑</span><span data-i18n="drClrHist">Clear History</span></div>
   </div>
   <!-- Metin doğrulama paneli -->
   <div id="dr-val-panel">
@@ -989,6 +996,21 @@ function validateEBIS(raw){
 // ── SONUÇ GÖSTER ──
 var DM={N:'N — Normal Ağırlıklı',H:'H — Hafif Beton',A:'A — Ağır Beton'};
 function showResult(res,rawData){
+  // Haptic feedback + beep on successful scan
+  try{
+    if(navigator.vibrate) navigator.vibrate([50,30,50]);
+  }catch(e){}
+  try{
+    if(window.AudioContext||window.webkitAudioContext){
+      var ac=window._beepCtx||(window._beepCtx=new (window.AudioContext||window.webkitAudioContext)());
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type='sine'; o.frequency.value=880;
+      g.gain.setValueAtTime(0.15,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.15);
+      o.start(); o.stop(ac.currentTime+0.15);
+    }
+  }catch(e){}
   var sec=document.getElementById('rsec');
   sec.style.display='block';
   setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'start'});},80);
@@ -1657,13 +1679,38 @@ function startCam(){
     showToast('HTTPS veya localhost gerekli!');return;
   }
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    showToast('Kamera API\'si desteklenmiyor.');return;
+    showToast(T('camApiUnsupported')||'Camera API not supported.');return;
   }
   resetMFReader();
   navigator.mediaDevices.getUserMedia({
-    video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920,min:1280},
+      height:{ideal:1080,min:720},
+      frameRate:{ideal:30,min:15},
+      advanced:[
+        {focusMode:'continuous'},
+        {focusMode:'auto'},
+        {exposureMode:'continuous'},
+        {whiteBalanceMode:'continuous'},
+        {zoom:1.0}
+      ]
+    }
   }).then(function(s){
     stream=s; vid.srcObject=s; vid.play();
+    // Apply continuous focus after stream is ready
+    try{
+      var track=s.getVideoTracks()[0];
+      var caps=track.getCapabilities?track.getCapabilities():{};
+      var constraints={advanced:[]};
+      if(caps.focusMode && caps.focusMode.indexOf('continuous')>=0){
+        constraints.advanced.push({focusMode:'continuous'});
+      }
+      if(caps.exposureMode && caps.exposureMode.indexOf('continuous')>=0){
+        constraints.advanced.push({exposureMode:'continuous'});
+      }
+      if(constraints.advanced.length) track.applyConstraints(constraints).catch(function(){});
+    }catch(e){}
     vid.onloadedmetadata=function(){
       var vw=vid.videoWidth||1280, vh=vid.videoHeight||720;
       SW=vw>>1; SH=vh>>1;
@@ -1684,7 +1731,7 @@ function startCam(){
     document.getElementById('cdot').classList.add('on');
     document.getElementById('cstat').textContent=T('camScan');
     var h=document.getElementById('camhint');
-    if(h){h.style.display='block';h.textContent='🔍 QR\'ı çerçeve içine al';h.className='camhint';}
+    if(h){h.style.display='block';h.textContent=T('camHint')||'🔍 Align QR in frame';h.className='camhint';}
     scanning=true; frameCnt=0; hardFrames=0;
     camScanBuf={}; if(camDebounceTimer){clearTimeout(camDebounceTimer);camDebounceTimer=null;}
     setTimeout(updateRoiOverlay,100);
