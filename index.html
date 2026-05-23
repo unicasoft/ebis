@@ -448,7 +448,7 @@ var LANG={
     tabCam:"Kamera ile Tara",tabImg:"Resimden Oku",
     camWait:"Kamera Bekleniyor",camOff:"Kamera Kapalı",camStart:"Kamerayı Başlat",
     camStop:"■ Durdur",camScan:"Karekod / Barkod Taranıyor…",camTorch:"El Feneri",
-    camHint:"🔍 QR’ı çerçeve içine al · Yaklaştır",
+    camHint:"🔍 QR’ı çerçeve içine al",camSteady:"📷 Kamerayı Sabitle",camApiUnsupported:"Kamera API’si desteklenmiyor.",
     imgDrop:"Sürükle & Bırak",imgOr:"veya",imgBrowse:"Dosya Seç",imgClear:"✕ Resmi Temizle",
     resCopy:"📋 Kopyala",resShare:"🔗 Paylaş",resNew:"↺ Yeni Tarama / Sıfırla",
     drTitle:"UNIBAR",drScan:"Tara",drImg:"Görüntü Tarama",drText:"Metin Doğrula",
@@ -468,7 +468,7 @@ var LANG={
     tabCam:"Scan with Camera",tabImg:"Read from Image",
     camWait:"Camera Waiting",camOff:"Camera Off",camStart:"Start Camera",
     camStop:"■ Stop",camScan:"Scanning QR / Barcode…",camTorch:"Flashlight",
-    camHint:"🔍 Align QR in frame · Zoom in",
+    camHint:"🔍 Align QR in frame",camSteady:"📷 Hold steady",camApiUnsupported:"Camera API not supported.",
     imgDrop:"Drag & Drop",imgOr:"or",imgBrowse:"Choose File",imgClear:"✕ Clear Image",
     resCopy:"📋 Copy",resShare:"🔗 Share",resNew:"↺ New Scan / Reset",
     drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Verify Text",
@@ -968,6 +968,12 @@ function validateEBIS(raw){
   }
   if(!fv.qty.trim()) add('qty','Beton Miktarı','Boş.','Tam sayı/toplam. Örnek: 12/60');
   else if(!/^\d+\/\d+$/.test(fv.qty)) add('qty','Beton Miktarı','"'+fv.qty+'" format hatalı.','Örnek: 12/60 (ondalık yok)');
+  else{
+    var qparts=fv.qty.split('/'),betonM=+qparts[0],siparisM=+qparts[1];
+    if(siparisM===0) add('qty','Beton Miktarı','Sipariş miktarı 0 olamaz.','"'+fv.qty+'" — toplam sipariş (paydadaki sayı) sıfır. Geçerli bir sipariş miktarı girilmeli.');
+    else if(betonM>siparisM) add('qty','Beton Miktarı','Beton miktarı siparişten fazla! ('+betonM+' > '+siparisM+')','"'+fv.qty+'" — teslim edilen beton ('+betonM+' m³) toplam siparişi ('+siparisM+' m³) aşamaz.');
+    else if(betonM===0) add('qty','Beton Miktarı','Beton miktarı 0.','"'+fv.qty+'" — teslim edilen beton miktarı (paydaki sayı) sıfır. Kontrol edin.');
+  }
   if(!fv.str.trim()) add('str','Dayanım Sınıfı','Boş.','C/LC + sayı. Örnek: C30, LC20');
   else if(!/^(LC|C)\d{2,3}$/.test(fv.str)) add('str','Dayanım Sınıfı','"'+fv.str+'" hatalı.','C/LC + 2-3 rakam. Örnek: C25, C50, LC35');
   if(!fv.r728.trim()) add('r728','7/28 Oranı','Boş.','Virgüllü ondalık. Örnek: 0,7');
@@ -1760,21 +1766,79 @@ function scanLoop(){
   var id=smCx.getImageData(0,0,SW,SH);
   var px=id.data; // Uint8ClampedArray, SW×SH×4
 
-  // ── Hareket tespiti (sampled, allocation yok) ─────────────────────────
-  var mSum=0;
-  for(var mi=0;mi<px.length;mi+=px.length>>5) mSum+=Math.abs(px[mi]-(prevBuf[mi>>2]||0));
-  motionVal=mSum>>5;
-  var hh=document.getElementById('camhint');
-  if(hh&&scanning){
-    if(motionVal>20){hh.textContent='📷 Kamerayı Sabitle';hh.className='camhint warn';}
-    else{hh.textContent='🔍 QR\'ı çerçeve içine al';hh.className='camhint';}
-  }
+  // ── BD aktif mi? Aktifse pahalı blur/otsu hesabını atla (HIZ) ──────────
+  var bdActive=(barcodeDetector && !multiSelActive);
 
   // ── Gray (compact, 1B/px, pre-alloc gBuf) ────────────────────────────
   var N=SW*SH;
   for(var i=0,j=0;j<N;i+=4,j++){
     gBuf[j]=((px[i]*77+px[i+1]*150+px[i+2]*29)>>8); // integer luma, hızlı
     prevBuf[j]=px[i];
+  }
+
+  // ── BD AKTİF: blur/otsu/buffer ATLA, direkt BD'ye git (çok daha hızlı) ──
+  if(bdActive){
+    if(!bdBusy){
+      bdBusy=true;
+      var wrap2=document.querySelector('.vwrap');
+      var pvW=wrap2?wrap2.clientWidth:320, pvH=wrap2?wrap2.clientHeight:320;
+      previewCnv.width=pvW; previewCnv.height=pvH;
+      var sc2=Math.max(pvW/SW,pvH/SH);
+      var ox2=(pvW-SW*sc2)/2, oy2=(pvH-SH*sc2)/2;
+      previewCx.drawImage(smCnv,0,0,SW,SH,ox2,oy2,SW*sc2,SH*sc2);
+      var pvSnap={canvas:previewCnv,sc:sc2,ox:ox2,oy:oy2};
+      var roi=getRoi(SW,SH);
+      var detectSrc;
+      if(roi){
+        roiCnv.width=roi.w; roiCnv.height=roi.h;
+        roiCx.drawImage(smCnv,roi.x,roi.y,roi.w,roi.h,0,0,roi.w,roi.h);
+        detectSrc=roiCnv;
+      } else { detectSrc=smCnv; }
+      barcodeDetector.detect(detectSrc).then(function(codes){
+        bdBusy=false;
+        if(!scanning||multiSelActive) return;
+        var adjusted=codes;
+        if(roi&&codes.length){
+          adjusted=codes.map(function(c){
+            var b=c.boundingBox;
+            return {rawValue:c.rawValue,format:c.format,
+              boundingBox:b?{x:b.x+roi.x,y:b.y+roi.y,width:b.width,height:b.height}:null};
+          });
+        }
+        if(adjusted.length>0){onCamCode(adjusted,pvSnap);return;}
+        // BD bulamadı — jsQR ROI fallback (ham gray'den otsu hesapla, sadece gerekince)
+        if(roi){
+          var rid=roiCx.getImageData(0,0,roiCnv.width,roiCnv.height);
+          var c=jsQR(rid.data,roiCnv.width,roiCnv.height,{inversionAttempts:'attemptBoth'});
+          if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:{x:c.location.topLeftCorner.x+roi.x,y:c.location.topLeftCorner.y+roi.y,width:c.location.topRightCorner.x-c.location.topLeftCorner.x,height:c.location.bottomLeftCorner.y-c.location.topLeftCorner.y}}],pvSnap);
+        } else {
+          var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
+          if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}]);
+        }
+      }).catch(function(){bdBusy=false;});
+    }
+    // Motion hint (hafif)
+    var hh2=document.getElementById('camhint');
+    if(hh2&&scanning){
+      var mSum2=0;
+      for(var mi=0;mi<px.length;mi+=px.length>>5) mSum2+=Math.abs(px[mi]-(prevBuf[mi>>2]||0));
+      if((mSum2>>5)>20){hh2.textContent=T('camSteady')||'📷 Hold steady';hh2.className='camhint warn';}
+      else{hh2.textContent=T('camHint')||'🔍 Align QR in frame';hh2.className='camhint';}
+    }
+    frameCnt++;
+    raf=requestAnimationFrame(scanLoop);
+    return;
+  }
+
+  // ── BD YOK: tam pre-processing (blur/otsu) + jsQR/zbar motorları ────────
+  // ── Hareket tespiti ───────────────────────────────────────────────────
+  var mSum=0;
+  for(var mi=0;mi<px.length;mi+=px.length>>5) mSum+=Math.abs(px[mi]-(prevBuf[mi>>2]||0));
+  motionVal=mSum>>5;
+  var hh=document.getElementById('camhint');
+  if(hh&&scanning){
+    if(motionVal>20){hh.textContent=T('camSteady')||'📷 Hold steady';hh.className='camhint warn';}
+    else{hh.textContent=T('camHint')||'🔍 Align QR in frame';hh.className='camhint';}
   }
 
   // ── Separable 3-tap blur (2 pass, O(3N)) — moire giderir ─────────────
@@ -1815,67 +1879,7 @@ function scanLoop(){
     boBuf[i]=boBuf[i+1]=boBuf[i+2]=bg; boBuf[i+3]=255;
   }
 
-  // ── BarcodeDetector PRIMARY — çoklu kod bulma, jsQR/zbar'dan önce ─────
-  // BD varsa: tek/çoklu kodu bulur, jsQR/zbar'a gerek yok.
-  // BD yoksa: aşağıdaki motorlar devreye girer.
-  if(barcodeDetector && !multiSelActive){
-    if(!bdBusy){
-      bdBusy=true;
-      // ── Preview canvas — display boyutunda, vid'den sync çekil ──────────
-      var wrap2=document.querySelector('.vwrap');
-      var pvW=wrap2?wrap2.clientWidth:320, pvH=wrap2?wrap2.clientHeight:320;
-      previewCnv.width=pvW; previewCnv.height=pvH;
-      var sc2=Math.max(pvW/SW,pvH/SH);
-      var ox2=(pvW-SW*sc2)/2, oy2=(pvH-SH*sc2)/2;
-      previewCx.drawImage(smCnv,0,0,SW,SH,ox2,oy2,SW*sc2,SH*sc2);
-      var pvSnap={canvas:previewCnv,sc:sc2,ox:ox2,oy:oy2};
-
-      // ── Detect source: ROI modda kırpılmış, tam modda smCnv ─────────────
-      var roi=getRoi(SW,SH);
-      var detectSrc;
-      if(roi){
-        roiCnv.width=roi.w; roiCnv.height=roi.h;
-        roiCx.drawImage(smCnv,roi.x,roi.y,roi.w,roi.h,0,0,roi.w,roi.h);
-        detectSrc=roiCnv;
-      } else {
-        detectSrc=smCnv;
-      }
-
-      barcodeDetector.detect(detectSrc).then(function(codes){
-        bdBusy=false;
-        if(!scanning||multiSelActive) return;
-        var adjusted=codes;
-        if(roi&&codes.length){
-          // bbox koordinatlarını ROI'den smCnv'ye çevir
-          adjusted=codes.map(function(c){
-            var b=c.boundingBox;
-            return {rawValue:c.rawValue,format:c.format,
-              boundingBox:b?{x:b.x+roi.x,y:b.y+roi.y,width:b.width,height:b.height}:null};
-          });
-        }
-        if(adjusted.length>0){onCamCode(adjusted,pvSnap);return;}
-        // BD bulamadı — jsQR ROI fallback
-        var fbData, fbW, fbH;
-        if(roi){
-          var rid=roiCx.getImageData(0,0,roiCnv.width,roiCnv.height);
-          fbData=rid.data; fbW=roiCnv.width; fbH=roiCnv.height;
-        } else {
-          fbData=otBuf; fbW=SW; fbH=SH;
-        }
-        var c=jsQR(fbData,fbW,fbH,{inversionAttempts:'attemptBoth'});
-        if(c&&c.data){
-          var bx=roi?c.location.topLeftCorner.x+roi.x:null;
-          var by=roi?c.location.topLeftCorner.y+roi.y:null;
-          var bw=roi?c.location.topRightCorner.x-c.location.topLeftCorner.x:null;
-          var bh=roi?c.location.bottomLeftCorner.y-c.location.topLeftCorner.y:null;
-          onCamCode([{rawValue:c.data,boundingBox:bx!=null?{x:bx,y:by,width:bw,height:bh}:null}],pvSnap);
-        }
-      }).catch(function(){bdBusy=false;});
-    }
-    frameCnt++;
-    raf=requestAnimationFrame(scanLoop);
-    return; // BD aktifken jsQR/zbar motorlarına gerek yok
-  }
+  // ── BarcodeDetector aktifse yukarıda return edildi. Buraya sadece BD YOK iken gelinir ──
 
   // ── Motor 1: jsQR ham ─────────────────────────────────────────────────
   var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
