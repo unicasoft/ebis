@@ -14,6 +14,7 @@
 <link rel="manifest" href="/ebis/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="./zbar-wasm.js"></script>
 <style>
@@ -96,6 +97,19 @@ main{padding:13px;max-width:600px;margin:0 auto}
 .mtab.on{border-color:var(--ac);background:rgba(59,158,255,.07)}
 .mtab-i{font-size:18px;margin-bottom:3px;display:block}
 .mtab-l{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--dm);transition:color .2s}
+.gen-lbl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dm);margin:4px 0 6px}
+.gen-sel{width:100%;padding:11px;border-radius:9px;background:var(--s1);color:var(--tx);border:2px solid var(--bd);font-size:14px;margin-bottom:12px}
+.gen-field{margin-bottom:10px}
+.gen-field label{display:block;font-size:12px;color:var(--dm);margin-bottom:4px}
+.gen-field input,.gen-field textarea{width:100%;padding:10px;border-radius:8px;background:var(--s1);color:var(--tx);border:1.5px solid var(--bd);font-size:14px;font-family:inherit;box-sizing:border-box}
+.gen-field textarea{min-height:64px;resize:vertical}
+.gen-field input:focus,.gen-field textarea:focus{outline:none;border-color:var(--ac)}
+.gen-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--ac);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+.gen-btn:active{opacity:.85}
+.gen-err{margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,82,82,.2);color:#ff9e9e;font-size:13px}
+.gen-preview{margin-top:16px;background:#fff;border-radius:12px;padding:18px;display:flex;justify-content:center;align-items:center;min-height:220px}
+.gen-preview svg,.gen-preview img{max-width:100%;height:auto}
+.gen-actions{display:flex;gap:8px;margin-top:12px}
 .mtab.on .mtab-l{color:var(--ac)}
 /* TORCH mini buton */
 #btorch{margin-left:auto;border:none;border-radius:6px;background:transparent;
@@ -448,7 +462,7 @@ var LANG={
     tabCam:"Kamera ile Tara",tabImg:"Resimden Oku",
     camWait:"Kamera Bekleniyor",camOff:"Kamera Kapalı",camStart:"Kamerayı Başlat",
     camStop:"■ Durdur",camScan:"Karekod / Barkod Taranıyor…",camTorch:"El Feneri",
-    camHint:"🔍 QR’ı çerçeve içine al",camSteady:"📷 Kamerayı Sabitle",camApiUnsupported:"Kamera API’si desteklenmiyor.",
+    camHint:"🔍 QR’ı çerçeve içine al",camSteady:"📷 Kamerayı Sabitle",camApiUnsupported:"Kamera API’si desteklenmiyor.",tabImg:"Resimden Oku",tabGen:"Kod Oluştur",genTitle:"QR / Barkod Oluştur",genType:"Tür",genCreate:"Oluştur",genDownload:"⬇ İndir",genShare:"🔗 Paylaş",
     imgDrop:"Sürükle & Bırak",imgOr:"veya",imgBrowse:"Dosya Seç",imgClear:"✕ Resmi Temizle",
     resCopy:"📋 Kopyala",resShare:"🔗 Paylaş",resNew:"↺ Yeni Tarama / Sıfırla",
     drTitle:"UNIBAR",drScan:"Tara",drImg:"Görüntü Tarama",drText:"Metin Doğrula",
@@ -468,7 +482,7 @@ var LANG={
     tabCam:"Scan with Camera",tabImg:"Read from Image",
     camWait:"Camera Waiting",camOff:"Camera Off",camStart:"Start Camera",
     camStop:"■ Stop",camScan:"Scanning QR / Barcode…",camTorch:"Flashlight",
-    camHint:"🔍 Align QR in frame",camSteady:"📷 Hold steady",camApiUnsupported:"Camera API not supported.",
+    camHint:"🔍 Align QR in frame",camSteady:"📷 Hold steady",camApiUnsupported:"Camera API not supported.",tabImg:"Read from Image",tabGen:"Create Code",genTitle:"Create QR / Barcode",genType:"Type",genCreate:"Generate",genDownload:"⬇ Download",genShare:"🔗 Share",
     imgDrop:"Drag & Drop",imgOr:"or",imgBrowse:"Choose File",imgClear:"✕ Clear Image",
     resCopy:"📋 Copy",resShare:"🔗 Share",resNew:"↺ New Scan / Reset",
     drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Verify Text",
@@ -675,7 +689,10 @@ document.addEventListener("DOMContentLoaded",applyLang);
       <span class="mtab-i">📷</span><span class="mtab-l" data-i18n="tabCam">Scan with Camera</span>
     </div>
     <div class="mtab" id="t-img" onclick="swMode('img')">
-      <span class="mtab-i">🖼️</span><span class="mtab-l">Resimden Oku</span>
+      <span class="mtab-i">🖼️</span><span class="mtab-l" data-i18n="tabImg">Read from Image</span>
+    </div>
+    <div class="mtab" id="t-gen" onclick="swMode('gen')">
+      <span class="mtab-i">✨</span><span class="mtab-l" data-i18n="tabGen">Create Code</span>
     </div>
   </div>
 
@@ -732,6 +749,26 @@ document.addEventListener("DOMContentLoaded",applyLang);
         </div>
         <button class="bclr" id="bclr" onclick="clrImg()" style="display:none"><span data-i18n="imgClear">✕ Clear Image</span></button>
         <div id="multi-img-sel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="p-gen" style="display:none">
+    <div class="card">
+      <div class="card-h">✨ <span data-i18n="genTitle">Create QR / Barcode</span></div>
+      <div style="padding:13px">
+        <label class="gen-lbl" data-i18n="genType">Type</label>
+        <select id="gen-type" class="gen-sel" onchange="genBuildForm()"></select>
+        <div id="gen-fields"></div>
+        <button class="gen-btn" onclick="genGenerate()" data-i18n="genCreate">Generate</button>
+        <div id="gen-error" class="gen-err" style="display:none"></div>
+        <div id="gen-out" style="display:none">
+          <div class="gen-preview"><div id="gen-code"></div></div>
+          <div class="gen-actions">
+            <button class="ra-btn" onclick="genDownload()" data-i18n="genDownload">⬇ Download</button>
+            <button class="ra-btn" onclick="genShare()" data-i18n="genShare">🔗 Share</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2496,9 +2533,12 @@ function procQR(data){
 function swMode(m){
   document.getElementById('p-cam').style.display=m==='cam'?'block':'none';
   document.getElementById('p-img').style.display=m==='img'?'block':'none';
+  document.getElementById('p-gen').style.display=m==='gen'?'block':'none';
   document.getElementById('t-cam').className='mtab'+(m==='cam'?' on':'');
   document.getElementById('t-img').className='mtab'+(m==='img'?' on':'');
+  document.getElementById('t-gen').className='mtab'+(m==='gen'?' on':'');
   if(m!=='cam') stopCam();
+  if(m==='gen'&&!genInited){ genInit(); genInited=true; }
 }
 function wt(id,ev){
   document.querySelectorAll('.wtab').forEach(function(t){t.classList.remove('on');});
@@ -2638,6 +2678,248 @@ window.addEventListener('load',function(){
     if(t&&(t.trim().charAt(0)==='{' || t.indexOf('E1')===0)) procQR(t);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════
+// QR / BARKOD OLUŞTURUCU (Generator)
+// ══════════════════════════════════════════════════════════════════
+var genInited=false, genCurrentSvg=null, genCurrentType=null;
+
+// Tip şablonları — veri odaklı (native ContentBuilders ile aynı mimari)
+function genEsc(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/:/g,'\\:');}
+function genUri(s){return encodeURIComponent(s).replace(/%20/g,'%20');}
+
+var GEN_TYPES=[
+  {id:'text', label:{tr:'Düz Metin',en:'Plain Text'}, fmt:'QR',
+   fields:[{k:'text',l:{tr:'Metin',en:'Text'},ph:'...',ml:true}],
+   build:function(m){return m.text||'';}},
+
+  {id:'url', label:{tr:'Web Adresi (URL)',en:'Web URL'}, fmt:'QR',
+   fields:[{k:'url',l:{tr:'URL',en:'URL'},ph:'https://example.com'}],
+   build:function(m){var u=(m.url||'').trim();if(u&&u.indexOf('://')<0)u='https://'+u;return u;}},
+
+  {id:'vcard', label:{tr:'Kişi Kartı (vCard)',en:'Contact (vCard)'}, fmt:'QR',
+   fields:[
+     {k:'first',l:{tr:'Ad',en:'First name'}},
+     {k:'last',l:{tr:'Soyad',en:'Last name'}},
+     {k:'phone',l:{tr:'Telefon',en:'Phone'}},
+     {k:'email',l:{tr:'E-posta',en:'Email'}},
+     {k:'org',l:{tr:'Kurum',en:'Organization'}},
+     {k:'title',l:{tr:'Ünvan',en:'Job title'}},
+     {k:'url',l:{tr:'Web sitesi',en:'Website'}},
+     {k:'adr',l:{tr:'Adres',en:'Address'},ml:true},
+     {k:'note',l:{tr:'Not',en:'Note'},ml:true}
+   ],
+   build:function(m){
+     var fn=(m.first||'').trim(),ln=(m.last||'').trim();
+     var s='BEGIN:VCARD\nVERSION:3.0\n';
+     s+='N:'+ln+';'+fn+';;;\n';
+     s+='FN:'+[fn,ln].filter(Boolean).join(' ')+'\n';
+     if(m.org&&m.org.trim())s+='ORG:'+m.org.trim()+'\n';
+     if(m.title&&m.title.trim())s+='TITLE:'+m.title.trim()+'\n';
+     if(m.phone&&m.phone.trim())s+='TEL;TYPE=CELL:'+m.phone.trim()+'\n';
+     if(m.email&&m.email.trim())s+='EMAIL:'+m.email.trim()+'\n';
+     if(m.url&&m.url.trim())s+='URL:'+m.url.trim()+'\n';
+     if(m.adr&&m.adr.trim())s+='ADR;TYPE=HOME:;;'+m.adr.replace(/\n/g,' ')+';;;;\n';
+     if(m.note&&m.note.trim())s+='NOTE:'+m.note.replace(/\n/g,' ')+'\n';
+     s+='END:VCARD';return s;
+   }},
+
+  {id:'wifi', label:{tr:'Wi-Fi Ağı',en:'Wi-Fi Network'}, fmt:'QR',
+   fields:[
+     {k:'ssid',l:{tr:'Ağ adı (SSID)',en:'Network name (SSID)'}},
+     {k:'pass',l:{tr:'Parola',en:'Password'}},
+     {k:'type',l:{tr:'Güvenlik (WPA/WEP/nopass)',en:'Security (WPA/WEP/nopass)'},ph:'WPA'}
+   ],
+   build:function(m){
+     var ssid=genEsc(m.ssid||''),pass=genEsc(m.pass||'');
+     var t=(m.type||'WPA').toUpperCase();
+     if(t==='NOPASS'||t==='NONE'||t==='')return 'WIFI:T:nopass;S:'+ssid+';;';
+     if(t==='WEP')t='WEP';else t='WPA';
+     return 'WIFI:T:'+t+';S:'+ssid+';P:'+pass+';;';
+   }},
+
+  {id:'email', label:{tr:'E-posta',en:'Email'}, fmt:'QR',
+   fields:[
+     {k:'to',l:{tr:'Alıcı',en:'To'},ph:'someone@example.com'},
+     {k:'subject',l:{tr:'Konu',en:'Subject'}},
+     {k:'body',l:{tr:'İçerik',en:'Body'},ml:true}
+   ],
+   build:function(m){
+     var to=(m.to||'').trim(),q=[];
+     if(m.subject&&m.subject.trim())q.push('subject='+genUri(m.subject));
+     if(m.body&&m.body.trim())q.push('body='+genUri(m.body));
+     return q.length?'mailto:'+to+'?'+q.join('&'):'mailto:'+to;
+   }},
+
+  {id:'phone', label:{tr:'Telefon',en:'Phone Number'}, fmt:'QR',
+   fields:[{k:'number',l:{tr:'Telefon numarası',en:'Phone number'},ph:'+905xxxxxxxxx'}],
+   build:function(m){return 'tel:'+(m.number||'').trim();}},
+
+  {id:'sms', label:{tr:'SMS',en:'SMS'}, fmt:'QR',
+   fields:[
+     {k:'number',l:{tr:'Telefon numarası',en:'Phone number'},ph:'+905xxxxxxxxx'},
+     {k:'msg',l:{tr:'Mesaj',en:'Message'},ml:true}
+   ],
+   build:function(m){var n=(m.number||'').trim();return (m.msg&&m.msg.trim())?'SMSTO:'+n+':'+m.msg:'SMSTO:'+n;}},
+
+  {id:'geo', label:{tr:'Konum (GEO)',en:'Location (GEO)'}, fmt:'QR',
+   fields:[
+     {k:'lat',l:{tr:'Enlem',en:'Latitude'},ph:'41.0082'},
+     {k:'lng',l:{tr:'Boylam',en:'Longitude'},ph:'28.9784'}
+   ],
+   build:function(m){return 'geo:'+(m.lat||'').trim()+','+(m.lng||'').trim();}},
+
+  {id:'code128', label:{tr:'Barkod — Code 128',en:'Barcode — Code 128'}, fmt:'CODE_128',
+   fields:[{k:'data',l:{tr:'İçerik',en:'Content'},ph:'ABC-12345'}],
+   build:function(m){return (m.data||'').trim();}},
+
+  {id:'ean13', label:{tr:'Barkod — EAN-13 (12-13 hane)',en:'Barcode — EAN-13 (12-13 digits)'}, fmt:'EAN_13',
+   fields:[{k:'data',l:{tr:'Rakamlar',en:'Digits'},ph:'5901234123457'}],
+   build:function(m){return (m.data||'').trim();}},
+
+  {id:'code39', label:{tr:'Barkod — Code 39',en:'Barcode — Code 39'}, fmt:'CODE_39',
+   fields:[{k:'data',l:{tr:'İçerik (A-Z 0-9)',en:'Content (A-Z 0-9)'},ph:'HELLO123'}],
+   build:function(m){return (m.data||'').trim().toUpperCase();}}
+];
+
+function genT(o){return (_lang==='en'?o.en:o.tr)||o.tr||o.en;}
+
+function genInit(){
+  var sel=document.getElementById('gen-type');
+  sel.innerHTML='';
+  GEN_TYPES.forEach(function(t,i){
+    var op=document.createElement('option');
+    op.value=t.id; op.textContent=genT(t.label);
+    sel.appendChild(op);
+  });
+  genBuildForm();
+}
+
+function genBuildForm(){
+  var id=document.getElementById('gen-type').value;
+  genCurrentType=GEN_TYPES.filter(function(t){return t.id===id;})[0]||GEN_TYPES[0];
+  var box=document.getElementById('gen-fields');
+  box.innerHTML='';
+  genCurrentType.fields.forEach(function(f){
+    var wrap=document.createElement('div'); wrap.className='gen-field';
+    var lab=document.createElement('label'); lab.textContent=genT(f.l);
+    wrap.appendChild(lab);
+    var inp;
+    if(f.ml){inp=document.createElement('textarea');}
+    else{inp=document.createElement('input');inp.type='text';}
+    inp.id='genf-'+f.k;
+    if(f.ph)inp.placeholder=f.ph;
+    wrap.appendChild(inp);
+    box.appendChild(wrap);
+  });
+  document.getElementById('gen-out').style.display='none';
+  document.getElementById('gen-error').style.display='none';
+  genCurrentSvg=null;
+}
+
+function genGenerate(){
+  var err=document.getElementById('gen-error');
+  err.style.display='none';
+  var m={};
+  genCurrentType.fields.forEach(function(f){
+    var el=document.getElementById('genf-'+f.k);
+    m[f.k]=el?el.value:'';
+  });
+  var content=genCurrentType.build(m);
+  if(!content||!content.trim()){
+    err.textContent=(_lang==='en'?'Please fill in the required fields.':'Lütfen gerekli alanları doldurun.');
+    err.style.display='block';
+    document.getElementById('gen-out').style.display='none';
+    return;
+  }
+  try{
+    var box=document.getElementById('gen-code');
+    box.innerHTML='';
+    if(genCurrentType.fmt==='QR'){
+      var writer=new ZXing.BrowserQRCodeSvgWriter();
+      var hints=new Map();
+      try{ hints.set(ZXing.EncodeHintType.MARGIN,1); }catch(e){}
+      try{ hints.set(ZXing.EncodeHintType.CHARACTER_SET,'UTF-8'); }catch(e){}
+      var svgEl=writer.write(content,320,320,hints);
+      box.appendChild(svgEl);
+      genCurrentSvg=svgEl;
+    }else{
+      // 1D barkod — JsBarcode (CODE128, EAN13, CODE39...)
+      var jsFmt={CODE_128:'CODE128',EAN_13:'EAN13',CODE_39:'CODE39'}[genCurrentType.fmt]||'CODE128';
+      var cvs=document.createElement('canvas');
+      var valid=true;
+      JsBarcode(cvs,content,{
+        format:jsFmt,
+        width:2,
+        height:100,
+        displayValue:true,
+        margin:10,
+        background:'#ffffff',
+        lineColor:'#000000',
+        valid:function(v){ valid=v; }
+      });
+      if(!valid) throw new Error(_lang==='en'
+        ? ('Invalid data for '+jsFmt+' (e.g. EAN-13 needs 12–13 digits)')
+        : (jsFmt+' için geçersiz veri (ör. EAN-13 için 12–13 rakam gerekir)'));
+      box.appendChild(cvs);
+      genCurrentSvg=cvs;
+    }
+    document.getElementById('gen-out').style.display='block';
+    try{ if(navigator.vibrate)navigator.vibrate(40); }catch(e){}
+  }catch(e){
+    err.textContent=(_lang==='en'?'Cannot encode: ':'Kodlanamadı: ')+(e&&e.message?e.message:e);
+    err.style.display='block';
+    document.getElementById('gen-out').style.display='none';
+  }
+}
+
+// SVG/canvas → PNG blob
+function genToPngBlob(cb){
+  if(!genCurrentSvg){cb(null);return;}
+  if(genCurrentSvg.tagName&&genCurrentSvg.tagName.toLowerCase()==='canvas'){
+    genCurrentSvg.toBlob(function(b){cb(b);},'image/png');
+    return;
+  }
+  // SVG → canvas → PNG
+  var svgData=new XMLSerializer().serializeToString(genCurrentSvg);
+  var svg64=btoa(unescape(encodeURIComponent(svgData)));
+  var img=new Image();
+  img.onload=function(){
+    var size=512;
+    var cvs=document.createElement('canvas'); cvs.width=size; cvs.height=size;
+    var cx=cvs.getContext('2d');
+    cx.fillStyle='#fff'; cx.fillRect(0,0,size,size);
+    cx.drawImage(img,0,0,size,size);
+    cvs.toBlob(function(b){cb(b);},'image/png');
+  };
+  img.onerror=function(){cb(null);};
+  img.src='data:image/svg+xml;base64,'+svg64;
+}
+
+function genDownload(){
+  genToPngBlob(function(blob){
+    if(!blob){showToast(_lang==='en'?'Could not create image':'Görüntü oluşturulamadı');return;}
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='unibar_'+Date.now()+'.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  });
+}
+
+function genShare(){
+  genToPngBlob(function(blob){
+    if(!blob){showToast(_lang==='en'?'Could not create image':'Görüntü oluşturulamadı');return;}
+    var file=new File([blob],'unibar.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'UNIBAR'}).catch(function(){});
+    }else{
+      // Fallback: indir
+      genDownload();
+      showToast(_lang==='en'?'Sharing not supported — downloaded instead':'Paylaşım desteklenmiyor — indirildi');
+    }
+  });
+}
 </script>
 </body>
 </html>
