@@ -483,6 +483,85 @@ var LANG={
     langBtn:"🌐 EN"
   }
 };
+var TR2EN={
+  '7/28 Dayanım Oranı':'7/28 Strength Ratio',
+  'Alıcı VKN/TCKN':'Recipient Tax/ID No',
+  'Araç Plaka':'Vehicle Plate',
+  'Araç Plaka No':'Vehicle Plate No',
+  'Barkod (EAN/UPC)':'Barcode (EAN/UPC)',
+  'Belge No':'Document No',
+  'Belge Tarihi':'Document Date',
+  'Belge Tipi':'Document Type',
+  'Beton Miktarı (m³)':'Concrete Amount (m³)',
+  'Borsa Tescil':'Exchange Registration',
+  'Brüt Ücret':'Gross Fee',
+  'Code39 / Code128':'Code39 / Code128',
+  'Coğrafi Konum':'Geolocation',
+  'Dayanım Sınıfı':'Strength Class',
+  'Dmax (mm)':'Dmax (mm)',
+  'Düz Metin':'Plain Text',
+  'E-posta Bağlantısı':'Email Link',
+  'EBİS Karekodlu Beton İrsaliyesi':'EBIS QR Concrete Delivery Note',
+  'EBİS Tanımlayıcı':'EBIS Identifier',
+  'ETTN (UUID)':'ETTN (UUID)',
+  'FTP URL':'FTP URL',
+  'Fiili Sevk Tarihi':'Actual Dispatch Date',
+  'GV Stopaj':'Income Tax Withholding',
+  'Geçersiz JSON':'Invalid JSON',
+  'Gönderen Unvan':'Sender Title',
+  'Gönderen VKN/TCKN':'Sender Tax/ID No',
+  'GİB e-Belge':'Revenue Admin e-Document',
+  'KDV Tevkifat':'VAT Withholding',
+  'KDV Tutarı':'VAT Amount',
+  'Kimyasal':'Chemical',
+  'Kimyasal Katkı':'Chemical Admixture',
+  'Klorür İçeriği':'Chloride Content',
+  'Kıvam Sınıfı':'Consistency Class',
+  'Lifler':'Fibers',
+  'Mal/Hizmet Toplam':'Goods/Service Total',
+  'Malzeme':'Material',
+  'Mera Fonu':'Pasture Fund',
+  'Miktar':'Amount',
+  'Mineral':'Mineral',
+  'Mineral Katkı':'Mineral Admixture',
+  'Net Ücret':'Net Fee',
+  'Para Birimi':'Currency',
+  'SGK Prim':'Social Security Premium',
+  'SMS':'SMS',
+  'Senaryo':'Scenario',
+  'Sevk Tarihi / Saati':'Dispatch Date / Time',
+  'Sevk Zamanı':'Dispatch Time',
+  'Su / Çimento Oranı':'Water / Cement Ratio',
+  'Tahsil KDV':'Collected VAT',
+  'Tahsilat':'Collection',
+  'Takvim Etkinliği':'Calendar Event',
+  'Taşıyıcı VKN':'Carrier Tax No',
+  'Telefon Numarası':'Phone Number',
+  'Toplam Komisyon':'Total Commission',
+  'URL':'URL',
+  'Vergi Dahil Toplam':'Tax-Incl. Total',
+  'Vergi No':'Tax Number',
+  'Wi-Fi Ağı':'Wi-Fi Network',
+  'Yoğunluk Sınıfı':'Density Class',
+  'e-Adisyon Belgesi':'e-Bill Document',
+  'e-Arşiv Belge':'e-Archive Document',
+  'e-Arşiv Fatura':'e-Archive Invoice',
+  'e-Döviz Alım Satım':'e-Currency Exchange',
+  'e-Fatura':'e-Invoice',
+  'e-Kıymetli Maden':'e-Precious Metal',
+  'e-Müstahsil Makbuzu':'e-Producer Receipt',
+  'e-Serbest Meslek Makbuzu':'e-Self-Employment Receipt',
+  'e-Sigorta Komisyon Gider':'e-Insurance Commission Expense',
+  'e-İrsaliye':'e-Delivery Note',
+  'vCard Kişi Kartı':'vCard Contact',
+  'Çimento':'Cement',
+  'Çimento Tipi':'Cement Type',
+  'Ödenecek Tutar':'Amount Payable',
+  'İptal Komisyonu':'Cancellation Commission',
+  'İrsaliye Seri No':'Delivery Note Serial No',
+  'İstihsal Komisyon':'Production Commission',
+};
+function tr2en(s){ if(_lang==="en" && TR2EN[s]) return TR2EN[s]; return s; }
 var _lang=(function(){
   var s=localStorage.getItem("ub_lang"); if(s) return s;
   return "en"; // Default to English
@@ -987,7 +1066,8 @@ function validateEBIS(raw){
   if(!fv.dmax.trim()) add('dmax','Dmax','Boş.','mm. Örnek: 22,4');
   else if(!/^\d+(,\d+)?$/.test(fv.dmax)) add('dmax','Dmax','"'+fv.dmax+'" hatalı.','VİRGÜL ile. Örnek: 22,4 veya 25');
   if(!fv.wc.trim()) add('wc','S/Ç Oranı','Boş.','Virgüllü "0,XX". Örnek: 0,41');
-  else if(!/^0,\d+$/.test(fv.wc)) add('wc','S/Ç Oranı','"'+fv.wc+'" hatalı.','"0," ile başlamalı, VİRGÜL. Örnek: 0,41');
+  else if(!/^\d+(,\d+)?$/.test(fv.wc)) add('wc','S/Ç Oranı','"'+fv.wc+'" hatalı.','VİRGÜL ile. Örnek: 0,41');
+  else if(parseFloat(fv.wc.replace(',','.'))<=0) add('wc','S/Ç Oranı','Su/Çimento oranı 0 veya negatif olamaz.','"'+fv.wc+'" — geçerli bir su/çimento oranı girilmeli (>0). Örnek: 0,41');
   if(!fv.plate.trim()) add('plate','Plaka','Boş.','Büyük harf boşluksuz max 10. Örnek: 06EBS01');
   else if(/\s/.test(fv.plate)) add('plate','Plaka','"'+fv.plate+'" boşluk var.','Boşluksuz büyük harf.');
   else if(fv.plate.length>10) add('plate','Plaka',fv.plate.length+' karakter — çok uzun.','Max 10 karakter.');
@@ -1037,21 +1117,21 @@ function showResult(res,rawData){
   } else {
     lw.innerHTML='<span style="font-size:28px">📦</span>';
   }
-  document.getElementById('dname').textContent=di.n||'e-Belge';
+  document.getElementById('dname').textContent=tr2en(di.n)||tr2en('e-Belge');
   document.getElementById('dsub').textContent=di.s||'—';
 
   var rh=document.getElementById('rhead');
   if(isUnknown){
     rh.className='rhead unknown';
     document.getElementById('rico').textContent='📋';
-    document.getElementById('rtitle').textContent=di.n||'Ham Veri';
-    document.getElementById('rsub').textContent=di.s||'EBİS / GİB formatı değil — ham içerik gösteriliyor.';
+    document.getElementById('rtitle').textContent=tr2en(di.n)||(_lang==='en'?'Raw Data':'Ham Veri');
+    document.getElementById('rsub').textContent=di.s||(_lang==='en'?'Not an EBIS / Revenue-Admin format — showing raw content.':'EBİS / GİB formatı değil — ham içerik gösteriliyor.');
     document.getElementById('errwrap').style.display='none';
     document.getElementById('ftable').style.display='none';
     document.getElementById('rawsec').style.display='block';
     var rb2=document.getElementById('rbadge');
     rb2.className='rbadge rb-u';
-    rb2.textContent=res.fmtBadge||'HAM VERİ';
+    rb2.textContent=res.fmtBadge||(_lang==='en'?'RAW DATA':'HAM VERİ');
     document.getElementById('rawbody').innerHTML=buildTerminal(rawData);
     return;
   }
@@ -1093,7 +1173,7 @@ function showResult(res,rawData){
       disp=v.slice(6,8)+'.'+v.slice(4,6)+'.'+v.slice(0,4)+' — '+v.slice(8,10)+':'+v.slice(10,12);
     }
     if(f.k==='density'&&v) disp=DM[String(v).toUpperCase()]||v;
-    fl+='<div class="frow'+(hasErr?' ferr':'')+'"><div class="fname">'+f.n+'</div>'
+    fl+='<div class="frow'+(hasErr?' ferr':'')+'"><div class="fname">'+tr2en(f.n)+'</div>'
       +'<div class="fval'+(empty?' empty':'')+'">'+disp+'</div>'
       +'<div class="fstat">'+(hasErr?'❌':empty?'<span style="color:var(--dm)">—</span>':'<span style="color:var(--ok)">✓</span>')+'</div></div>';
   }
@@ -1588,7 +1668,7 @@ var smCnv=null, smCx=null;
 var SW=640, SH=360;
 var zbBusy=false, zxBusy=false, bdBusy=false;
 var camScanBuf={}, camDebounceTimer=null, camLastSnap=null;
-var CAM_DEBOUNCE_MS=2200;
+var CAM_DEBOUNCE_MS=1500;
 
 function onCamCode(codes,snap){
   if(!scanning||multiSelActive) return;
@@ -2206,7 +2286,7 @@ function selectAllImageCodes(){
     var col=MCOLORS[i%MCOLORS.length];
     var res=detectAndValidate(code.text);
     var di=res.di||{};
-    var typeName=di.n||(detectFmt(code.text).badge);
+    var typeName=tr2en(di.n)||(detectFmt(code.text).badge);
     // Ham içerik özeti
     var rawPrev=code.text.length>120?code.text.substring(0,120)+'…':code.text;
     // Alan listesi — EBİS/GİB varsa ilk 6 alan, yoksa sadece raw
@@ -2220,7 +2300,7 @@ function selectAllImageCodes(){
         var disp=empty?'—':String(v);
         if(f.k==='dt'&&v&&/^\d{12}$/.test(v))
           disp=v.slice(6,8)+'.'+v.slice(4,6)+'.'+v.slice(0,4)+' '+v.slice(8,10)+':'+v.slice(10,12);
-        fieldsHtml+='<div class="ac-row"><div class="ac-fn">'+f.n+'</div><div class="ac-fv'+(empty?' fval empty':'')+'">'+disp.replace(/</g,'&lt;')+'</div></div>';
+        fieldsHtml+='<div class="ac-row"><div class="ac-fn">'+tr2en(f.n)+'</div><div class="ac-fv'+(empty?' fval empty':'')+'">'+disp.replace(/</g,'&lt;')+'</div></div>';
       });
       if(res.fields.length>6) fieldsHtml+='<div class="ac-row" style="color:var(--dm);font-size:11px"><div></div><div>+'+(res.fields.length-6)+' alan daha…</div></div>';
       fieldsHtml+='</div>';
