@@ -1188,6 +1188,7 @@ function showResult(res,rawData){
   setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'start'});},80);
   // Favori butonu güncelle
   var fb=document.getElementById('btn-fav');
+  fb.style.display='';
   var isFav=favHas(rawData);
   fb.textContent=isFav?'★':'☆';
   fb.style.color=isFav?'#f5c518':'var(--dm)';
@@ -1761,7 +1762,11 @@ var CAM_DEBOUNCE_MS=(function(){var v=+localStorage.getItem('k-scandelay');retur
 function onCamCode(codes,snap){
   if(!scanning||multiSelActive) return;
   codes.forEach(function(bc){
-    if(bc&&bc.rawValue) camScanBuf[bc.rawValue]=bc;
+    if(bc&&bc.rawValue!=null){
+      // Boş/whitespace içerik: özel anahtarla sakla (falsy "" sorununu aşar)
+      var key=(bc.rawValue==='')?'__EMPTY__':bc.rawValue;
+      camScanBuf[key]=bc;
+    }
   });
   // Son snapshot'ı güncelle (varsa)
   if(snap&&snap.canvas) camLastSnap=snap;
@@ -1918,7 +1923,7 @@ function startCam(){
 }
 
 function camFound(txt){
-  if(!scanning||!txt) return;
+  if(!scanning||txt==null) return;
   scanning=false; stopCam(); procQR(txt);
 }
 
@@ -1978,10 +1983,10 @@ function scanLoop(){
         if(roi){
           var rid=roiCx.getImageData(0,0,roiCnv.width,roiCnv.height);
           var c=jsQR(rid.data,roiCnv.width,roiCnv.height,{inversionAttempts:'attemptBoth'});
-          if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:{x:c.location.topLeftCorner.x+roi.x,y:c.location.topLeftCorner.y+roi.y,width:c.location.topRightCorner.x-c.location.topLeftCorner.x,height:c.location.bottomLeftCorner.y-c.location.topLeftCorner.y}}],pvSnap);
+          if(c&&c.data!=null) onCamCode([{rawValue:c.data,boundingBox:{x:c.location.topLeftCorner.x+roi.x,y:c.location.topLeftCorner.y+roi.y,width:c.location.topRightCorner.x-c.location.topLeftCorner.x,height:c.location.bottomLeftCorner.y-c.location.topLeftCorner.y}}],pvSnap);
         } else {
           var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
-          if(c&&c.data) onCamCode([{rawValue:c.data,boundingBox:null}]);
+          if(c&&c.data!=null) onCamCode([{rawValue:c.data,boundingBox:null}]);
         }
       }).catch(function(){bdBusy=false;});
     }
@@ -2051,15 +2056,15 @@ function scanLoop(){
 
   // ── Motor 1: jsQR ham ─────────────────────────────────────────────────
   var c=jsQR(px,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c&&c.data){onCamCode([{rawValue:c.data,boundingBox:null}]);return;}
+  if(c&&c.data!=null){onCamCode([{rawValue:c.data,boundingBox:null}]);return;}
 
   // ── Motor 2: jsQR Otsu ────────────────────────────────────────────────
   var c2=jsQR(otBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c2&&c2.data){onCamCode([{rawValue:c2.data,boundingBox:null}]);return;}
+  if(c2&&c2.data!=null){onCamCode([{rawValue:c2.data,boundingBox:null}]);return;}
 
   // ── Motor 3: jsQR BlurOtsu — ekran moire için ─────────────────────────
   var c3=jsQR(boBuf,SW,SH,{inversionAttempts:'attemptBoth'});
-  if(c3&&c3.data){onCamCode([{rawValue:c3.data,boundingBox:null}]);return;}
+  if(c3&&c3.data!=null){onCamCode([{rawValue:c3.data,boundingBox:null}]);return;}
 
   // ── Motor 4: zbar TAM ÇÖZÜNÜRLÜK — her kare, busy flag ──────────────────
   // Kritik: zbar yarı ölçekten değil tam video frame'den çalışır
@@ -2122,7 +2127,7 @@ function scanLoop(){
       laBuf[i]=laBuf[i+1]=laBuf[i+2]=vv; laBuf[i+3]=255;
     }
     var c7=jsQR(laBuf,SW,SH,{inversionAttempts:'dontInvert'});
-    if(c7&&c7.data){onCamCode([{rawValue:c7.data,boundingBox:null}]);}
+    if(c7&&c7.data!=null){onCamCode([{rawValue:c7.data,boundingBox:null}]);}
     else{
       zbBusy=true;
       zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(laBuf),SW,SH))
@@ -2263,6 +2268,11 @@ function findAllCodesInImage(img,cb){
   if(barcodeDetector){
     barcodeDetector.detect(img).then(function(codes){
       if(codes&&codes.length>0){
+        // Boş içerikli tek kod: doğrudan boş olarak döndür (falsy sorununu aşar)
+        if(codes.length===1 && codes[0].rawValue===''){
+          cb([{text:'',bbox:codes[0].boundingBox}]);
+          return;
+        }
         cb(codes.map(function(c){return {text:c.rawValue,bbox:c.boundingBox};}));
       } else {
         findAllCodesMultiRegion(img,cb);
@@ -2292,8 +2302,13 @@ function findAllCodesMultiRegion(img,cb){
     {x:w/5|0,y:h/5|0,w:w*3/5|0,h:h*3/5|0}
   ];
   var found=[];
+  var sawEmpty=false;
   function addUniq(txt){
-    if(!txt) return;
+    if(txt==null) return;
+    if(txt===''){ // boş içerikli QR — bir kez temsil et
+      if(!sawEmpty){ sawEmpty=true; found.push({text:''}); }
+      return;
+    }
     if(!found.some(function(f){return f.text===txt;})) found.push({text:txt});
   }
   var proms=regions.map(function(rg){
@@ -2461,13 +2476,13 @@ function scanRegion(p){
   return new Promise(function(resolve){
     // jsQR ham
     var c=jsQR(p.raw,p.w,p.h,{inversionAttempts:'attemptBoth'});
-    if(c&&c.data){resolve(c.data);return;}
+    if(c&&c.data!=null){resolve(c.data);return;}
     // jsQR Otsu
     c=jsQR(p.ot,p.w,p.h,{inversionAttempts:'attemptBoth'});
-    if(c&&c.data){resolve(c.data);return;}
+    if(c&&c.data!=null){resolve(c.data);return;}
     // jsQR Yerel Adaptif
     c=jsQR(p.la,p.w,p.h,{inversionAttempts:'dontInvert'});
-    if(c&&c.data){resolve(c.data);return;}
+    if(c&&c.data!=null){resolve(c.data);return;}
     // zbar ham + Otsu + LA zincirleme
     if(typeof zbarWasm!=='undefined'){
       zbarWasm.scanImageData(new ImageData(new Uint8ClampedArray(p.raw),p.w,p.h))
@@ -2575,9 +2590,54 @@ function valMan(id){
 }
 function procQR(data){
   _lastRaw=data;
+  // Boş / yalnızca boşluk içeren QR — geçerli ama içeriksiz
+  if(data==null || data.trim()===''){
+    document.getElementById('cstat').textContent=(_lang==='en'?'Empty code read':'Boş kod okundu');
+    showEmptyResult(data==null?'':data);
+    return;
+  }
   histAdd(data);
-  document.getElementById('cstat').textContent='Karekod Okundu ✓';
+  document.getElementById('cstat').textContent=(_lang==='en'?'Code read ✓':'Karekod Okundu ✓');
   showResult(detectAndValidate(data),data);
+}
+
+// Boş içerikli QR için özel sonuç ekranı
+function showEmptyResult(raw){
+  var sec=document.getElementById('rsec');
+  sec.style.display='block';
+  try{ if(navigator.vibrate) navigator.vibrate([40,30,40]); }catch(e){}
+  setTimeout(function(){sec.scrollIntoView({behavior:'smooth',block:'start'});},80);
+  var isEn=_lang==='en';
+  var rh=document.getElementById('rhead');
+  rh.className='rhead unknown';
+  document.getElementById('rico').textContent='⬜';
+  document.getElementById('rtitle').textContent=isEn?'Empty QR Code':'Boş Karekod';
+  document.getElementById('rsub').textContent=isEn
+    ? 'The code is valid but contains no data (0 characters).'
+    : 'Karekod geçerli ancak hiç veri içermiyor (0 karakter).';
+  var rb=document.getElementById('rbadge');
+  if(rb){rb.className='rbadge rb-u';rb.textContent=isEn?'EMPTY':'BOŞ';}
+  // Banner / detay bölümlerini gizle
+  var db=document.getElementById('dbanner'); if(db) db.style.display='none';
+  var ew=document.getElementById('errwrap'); if(ew) ew.style.display='none';
+  var ft=document.getElementById('ftable'); if(ft) ft.style.display='none';
+  var fl=document.getElementById('flist'); if(fl) fl.style.display='none';
+  // Ham veri terminalinde açıklama göster
+  var rawsec=document.getElementById('rawsec'); if(rawsec) rawsec.style.display='block';
+  var rawbody=document.getElementById('rawbody');
+  if(rawbody){
+    var lenInfo=isEn?('Length: '+raw.length+' character(s)'):('Uzunluk: '+raw.length+' karakter');
+    var whitespaceNote='';
+    if(raw.length>0){
+      whitespaceNote=isEn
+        ? '<br>Contains only whitespace (spaces/tabs/newlines).'
+        : '<br>Yalnızca boşluk karakterleri içeriyor (boşluk/tab/satır).';
+    }
+    rawbody.innerHTML='<div style="padding:14px;color:var(--dm);font-size:13px;line-height:1.6">'+
+      (isEn?'⬜ No content encoded.':'⬜ Kodlanmış içerik yok.')+'<br>'+lenInfo+whitespaceNote+'</div>';
+  }
+  // Favori butonu gizle (boş içerik favlanmaz)
+  var fb=document.getElementById('btn-fav'); if(fb) fb.style.display='none';
 }
 
 // ── SEKME ──
