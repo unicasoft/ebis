@@ -36,6 +36,18 @@
   --tx:#2c1a0e;--lb:#5a3820;--dm:#8a6848;--br:#1a0e04;--vl:#1a0a00;
   --ib:#f9f0e4;--sh:0 2px 10px rgba(0,0,0,.1);--tcol:#f5ede0;
 }
+[data-theme="mor"]{
+  --bg:#150a24;--s1:#1f1136;--s2:#2b1a49;--s3:#38235e;--bd:#4a3170;
+  --ac:#b57bff;--ac2:#7c3aed;--ok:#22dd88;--wa:#ffb830;--er:#ff4560;
+  --tx:#e8def8;--lb:#c4b0e0;--dm:#8a6ab0;--br:#f6f0ff;--vl:#ffffff;
+  --ib:#0e0518;--sh:0 2px 12px rgba(0,0,0,.5);--tcol:#150a24;
+}
+[data-theme="yesil"]{
+  --bg:#08201a;--s1:#0d2c24;--s2:#123c31;--s3:#184e40;--bd:#215d4d;
+  --ac:#2ee6a0;--ac2:#0f9d6e;--ok:#22dd88;--wa:#ffb830;--er:#ff4560;
+  --tx:#d6f5ea;--lb:#a0d8c8;--dm:#5a9080;--br:#f0fffa;--vl:#ffffff;
+  --ib:#04140f;--sh:0 2px 12px rgba(0,0,0,.5);--tcol:#08201a;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s}
@@ -91,12 +103,16 @@ header{background:var(--s1);border-bottom:2px solid var(--bd);padding:10px 14px;
 main{padding:13px;max-width:600px;margin:0 auto}
 
 /* MOD SEKMELERİ */
-.modtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.mtab{background:var(--s1);border:2px solid var(--bd);border-radius:10px;
-  padding:9px 8px;cursor:pointer;text-align:center;transition:.2s;user-select:none}
+.modtabs{display:flex;gap:6px;margin-bottom:8px}
+.mtab{flex:1;background:var(--s1);border:2px solid var(--bd);border-radius:10px;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;
+  padding:9px 6px;cursor:pointer;transition:all .15s;min-height:0}
 .mtab.on{border-color:var(--ac);background:rgba(59,158,255,.07)}
-.mtab-i{font-size:18px;margin-bottom:3px;display:block}
-.mtab-l{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--dm);transition:color .2s}
+.mtab-i{font-size:17px;display:block;line-height:1}
+.mtab-l{font-size:10px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;color:var(--dm);transition:color .2s}
+.mtab.on .mtab-l{color:var(--ac)}
+/* Dar ekranda etiketi gizle, sadece ikon */
+@media(max-width:380px){.mtab-l{display:none}.mtab-i{font-size:20px}}
 .gen-lbl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dm);margin:4px 0 6px}
 .gen-sel{width:100%;padding:11px;border-radius:9px;background:var(--s1);color:var(--tx);border:2px solid var(--bd);font-size:14px;margin-bottom:12px}
 .gen-field{margin-bottom:10px}
@@ -289,6 +305,23 @@ textarea.minp::placeholder{color:var(--dm)}
 .dr-item:hover,.dr-item:active{background:var(--s2)}
 .dr-ic{font-size:18px;width:24px;text-align:center;flex-shrink:0}
 .dr-sep{height:1px;background:var(--bd);margin:6px 18px}
+/* AYARLAR MODALI */
+#setmodal{position:fixed;inset:0;z-index:200}
+#setbd{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+#setsheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:92%;max-width:400px;max-height:86vh;overflow-y:auto;background:var(--s1);
+  border:1px solid var(--bd);border-radius:16px;padding:18px;box-shadow:var(--sh)}
+.set-hd{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:800;color:var(--br);margin-bottom:16px}
+.set-x{margin-left:auto;background:none;border:none;color:var(--dm);font-size:20px;cursor:pointer;padding:2px 8px}
+.set-sec{margin-bottom:20px}
+.set-lbl{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px}
+.set-lbl b{color:var(--ac)}
+.set-themes{display:flex;gap:10px;flex-wrap:wrap}
+.thsw{width:46px;height:46px;border-radius:12px;border:2px solid var(--bd);background:none;cursor:pointer;padding:3px;transition:all .15s}
+.thsw span{display:block;width:100%;height:100%;border-radius:8px}
+.thsw.on{border-color:var(--ac);transform:scale(1.08)}
+.set-sec input[type=range]{width:100%;accent-color:var(--ac);margin:2px 0}
+.set-hint{font-size:11px;color:var(--dm);margin-top:5px;line-height:1.4}
 .dr-list-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;
   border-bottom:1px solid var(--bd);background:var(--s2);flex-shrink:0}
 .dr-list-hd button{background:none;border:none;color:var(--ac);
@@ -466,7 +499,7 @@ var LANG={
     imgDrop:"Sürükle & Bırak",imgOr:"veya",imgBrowse:"Dosya Seç",imgClear:"✕ Resmi Temizle",
     resCopy:"📋 Kopyala",resShare:"🔗 Paylaş",resNew:"↺ Yeni Tarama / Sıfırla",
     drTitle:"UNIBAR",drScan:"Tara",drImg:"Görüntü Tarama",drText:"Metin Doğrula",
-    drFavs:"Favoriler",drHist:"Geçmiş",drCopy:"Kopyala",drShare:"Paylaş",drClrHist:"Geçmişi Temizle",
+    drFavs:"Favoriler",drHist:"Geçmiş",drSettings:"Ayarlar",setTitle:"Ayarlar",setTheme:"Tema",setDelay:"Tarama bekleme süresi",setDelayHint:"Sonucu göstermeden önce birden fazla kodu toplama süresi.",setHist:"Geçmiş kayıt sınırı",setHistHint:"Eski kayıtlar otomatik silinir.",drCopy:"Kopyala",drShare:"Paylaş",drClrHist:"Geçmişi Temizle",
     drValPh:"EBİS, GİB JSON, URL, barkod içeriği…\n\nYapıştırın ve Doğrula’ya basın.",
     drValBtn:"Doğrula →",histTitle:"🕐 Geçmiş",favTitle:"★ Favoriler",
     listClr:"🗑 Listeyi Temizle",
@@ -486,7 +519,7 @@ var LANG={
     imgDrop:"Drag & Drop",imgOr:"or",imgBrowse:"Choose File",imgClear:"✕ Clear Image",
     resCopy:"📋 Copy",resShare:"🔗 Share",resNew:"↺ New Scan / Reset",
     drTitle:"UNIBAR",drScan:"Scan",drImg:"Image Scan",drText:"Verify Text",
-    drFavs:"Favorites",drHist:"History",drCopy:"Copy",drShare:"Share",drClrHist:"Clear History",
+    drFavs:"Favorites",drHist:"History",drSettings:"Settings",setTitle:"Settings",setTheme:"Theme",setDelay:"Scan wait time",setDelayHint:"Time to collect multiple codes before showing the result.",setHist:"History max entries",setHistHint:"Older entries are removed automatically.",drCopy:"Copy",drShare:"Share",drClrHist:"Clear History",
     drValPh:"EBİS, GİB JSON, URL, barcode content…\n\nPaste and press Validate.",
     drValBtn:"Validate →",histTitle:"🕐 History",favTitle:"★ Favorites",
     listClr:"🗑 Clear List",
@@ -585,11 +618,6 @@ function applyLang(){
   var L=LANG[_lang]||LANG.tr;
   document.getElementById("htmlroot").lang=_lang;
   var s=document.getElementById("hsubtitle"); if(s) s.textContent=L.appSub;
-  var tbl=document.querySelector(".tbl"); if(tbl) tbl.textContent=L.theme;
-  var btns=document.querySelectorAll(".tbtn");
-  if(btns[0]) btns[0].childNodes[btns[0].childNodes.length-1].textContent=L.thKoyu;
-  if(btns[1]) btns[1].childNodes[btns[1].childNodes.length-1].textContent=L.thAcik;
-  if(btns[2]) btns[2].childNodes[btns[2].childNodes.length-1].textContent=L.thBej;
   var tCam=document.getElementById("t-cam"); if(tCam) tCam.querySelector(".mtab-l").textContent=L.tabCam;
   var tImg=document.getElementById("t-img"); if(tImg) tImg.querySelector(".mtab-l").textContent=L.tabImg;
   var cstat=document.getElementById("cstat");
@@ -653,19 +681,6 @@ document.addEventListener("DOMContentLoaded",applyLang);
   <button id="btn-lang" onclick="toggleLang()" title="Language" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--tx);padding:4px 6px;border-radius:6px;">🌐 TR</button>
   <button id="btn-install" onclick="installApp()" title="Ana Ekrana Ekle">📲</button>
 </header>
-
-<div id="tbar">
-  <span class="tbl">Tema:</span>
-  <button class="tbtn active" data-t="koyu" onclick="setTheme('koyu',this)">
-    <span class="tsw" style="background:linear-gradient(135deg,#1060c8,#3b9eff)"></span>Koyu
-  </button>
-  <button class="tbtn" data-t="acik" onclick="setTheme('acik',this)">
-    <span class="tsw" style="background:linear-gradient(135deg,#0d47a1,#1565c0)"></span>Açık
-  </button>
-  <button class="tbtn" data-t="bej" onclick="setTheme('bej',this)">
-    <span class="tsw" style="background:linear-gradient(135deg,#6b3d1e,#c8a070)"></span>Bej/Kahve
-  </button>
-</div>
 
 <div id="hwarn">
   <div class="hw-t">⚠ Kamera için HTTPS Gerekli</div>
@@ -856,6 +871,8 @@ document.addEventListener("DOMContentLoaded",applyLang);
     <div class="dr-item" onclick="drAction('favs')"><span class="dr-ic">⭐</span><span data-i18n="drFavs">Favorites</span></div>
     <div class="dr-item" onclick="drAction('hist')"><span class="dr-ic">🕐</span><span data-i18n="drHist">History</span></div>
     <div class="dr-sep"></div>
+    <div class="dr-item" onclick="drAction('settings')"><span class="dr-ic">⚙️</span><span data-i18n="drSettings">Settings</span></div>
+    <div class="dr-sep"></div>
     <div class="dr-item" onclick="drAction('copy')"><span class="dr-ic">📋</span><span data-i18n="drCopy">Copy</span></div>
     <div class="dr-item" onclick="drAction('share')"><span class="dr-ic">🔗</span><span data-i18n="drShare">Share</span></div>
     <div class="dr-sep"></div>
@@ -888,6 +905,38 @@ document.addEventListener("DOMContentLoaded",applyLang);
     <div class="ioss"><span class="iosn">2</span><span><strong>"Ana Ekrana Ekle" ＋</strong> seçeneğine dokun</span></div>
     <div class="ioss"><span class="iosn">3</span><span>Sağ üstten <strong>"Ekle"</strong>'ye dokun</span></div>
     <button class="iosok" onclick="closeIos()">Tamam</button>
+  </div>
+</div>
+
+<div id="setmodal" style="display:none">
+  <div id="setbd" onclick="closeSettings()"></div>
+  <div id="setsheet">
+    <div class="set-hd">⚙️ <span data-i18n="setTitle">Settings</span>
+      <button class="set-x" onclick="closeSettings()">✕</button>
+    </div>
+
+    <div class="set-sec">
+      <div class="set-lbl" data-i18n="setTheme">Theme</div>
+      <div class="set-themes">
+        <button class="thsw" data-t="koyu" onclick="pickTheme('koyu')" title="Dark"><span style="background:linear-gradient(135deg,#1060c8,#3b9eff)"></span></button>
+        <button class="thsw" data-t="acik" onclick="pickTheme('acik')" title="Light"><span style="background:linear-gradient(135deg,#8fb4e0,#1565c0)"></span></button>
+        <button class="thsw" data-t="bej" onclick="pickTheme('bej')" title="Beige"><span style="background:linear-gradient(135deg,#c8a070,#6b3d1e)"></span></button>
+        <button class="thsw" data-t="mor" onclick="pickTheme('mor')" title="Purple"><span style="background:linear-gradient(135deg,#b57bff,#7c3aed)"></span></button>
+        <button class="thsw" data-t="yesil" onclick="pickTheme('yesil')" title="Green"><span style="background:linear-gradient(135deg,#2ee6a0,#0f9d6e)"></span></button>
+      </div>
+    </div>
+
+    <div class="set-sec">
+      <div class="set-lbl"><span data-i18n="setDelay">Scan wait time</span>: <b id="set-delay-v">1.5s</b></div>
+      <input type="range" id="set-delay" min="500" max="3000" step="100" value="1500" oninput="onDelayChange(this.value)">
+      <div class="set-hint" data-i18n="setDelayHint">Time to collect multiple codes before showing the result.</div>
+    </div>
+
+    <div class="set-sec">
+      <div class="set-lbl"><span data-i18n="setHist">History max entries</span>: <b id="set-hist-v">50</b></div>
+      <input type="range" id="set-hist" min="10" max="200" step="10" value="50" oninput="onHistChange(this.value)">
+      <div class="set-hint" data-i18n="setHistHint">Older entries are removed automatically.</div>
+    </div>
   </div>
 </div>
 
@@ -1272,7 +1321,8 @@ function histAdd(raw){
   // Tekrarları önle
   a=a.filter(function(x){return x.v!==raw;});
   a.unshift({v:raw,t:Date.now()});
-  if(a.length>50) a=a.slice(0,50);
+  var max=getHistMax();
+  if(a.length>max) a=a.slice(0,max);
   histSave(a);
 }
 
@@ -1476,6 +1526,7 @@ function raShare(){
 function drAction(a){
   if(a==='scan'){closeDrawer();swMode('cam');return;}
   if(a==='img'){closeDrawer();swMode('img');return;}
+  if(a==='settings'){closeDrawer();openSettings();return;}
   if(a==='text'){
     document.querySelector('.dr-menu').style.display='none';
     document.getElementById('dr-val-panel').style.display='flex';
@@ -1705,7 +1756,7 @@ var smCnv=null, smCx=null;
 var SW=640, SH=360;
 var zbBusy=false, zxBusy=false, bdBusy=false;
 var camScanBuf={}, camDebounceTimer=null, camLastSnap=null;
-var CAM_DEBOUNCE_MS=1500;
+var CAM_DEBOUNCE_MS=(function(){var v=+localStorage.getItem('k-scandelay');return(v>=500&&v<=3000)?v:1500;})();
 
 function onCamCode(codes,snap){
   if(!scanning||multiSelActive) return;
@@ -2592,14 +2643,50 @@ function setFS(btn){
 }
 
 // ── TEMA ──
-var TC={koyu:'#0a1628',acik:'#edf1f7',bej:'#f5ede0'};
-function setTheme(n,btn){
+var TC={koyu:'#0a1628',acik:'#edf1f7',bej:'#f5ede0',mor:'#150a24',yesil:'#08201a'};
+function setTheme(n){
   document.documentElement.setAttribute('data-theme',n);
-  document.querySelectorAll('.tbtn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
   localStorage.setItem('k-theme',n);
   var m=document.getElementById('tc-meta');
   if(m) m.setAttribute('content',TC[n]||'#0a1628');
+  document.querySelectorAll('.thsw').forEach(function(b){
+    b.classList.toggle('on',b.getAttribute('data-t')===n);
+  });
+}
+function pickTheme(n){ setTheme(n); }
+
+// ── AYARLAR ──
+function openSettings(){
+  document.getElementById('setmodal').style.display='block';
+  // Mevcut değerleri yükle
+  var d=getScanDelay(); var de=document.getElementById('set-delay');
+  if(de){de.value=d;document.getElementById('set-delay-v').textContent=(d/1000).toFixed(1)+'s';}
+  var h=getHistMax(); var he=document.getElementById('set-hist');
+  if(he){he.value=h;document.getElementById('set-hist-v').textContent=h;}
+  var th=localStorage.getItem('k-theme')||'koyu';
+  document.querySelectorAll('.thsw').forEach(function(b){
+    b.classList.toggle('on',b.getAttribute('data-t')===th);
+  });
+}
+function closeSettings(){ document.getElementById('setmodal').style.display='none'; }
+function getScanDelay(){ var v=+localStorage.getItem('k-scandelay'); return (v>=500&&v<=3000)?v:1500; }
+function getHistMax(){ var v=+localStorage.getItem('k-histmax'); return (v>=10&&v<=200)?v:50; }
+function onDelayChange(v){
+  v=+v; localStorage.setItem('k-scandelay',v);
+  CAM_DEBOUNCE_MS=v;
+  document.getElementById('set-delay-v').textContent=(v/1000).toFixed(1)+'s';
+}
+function onHistChange(v){
+  v=+v; localStorage.setItem('k-histmax',v);
+  document.getElementById('set-hist-v').textContent=v;
+  trimHistory();
+}
+function trimHistory(){
+  try{
+    var h=JSON.parse(localStorage.getItem('kk-hist')||'[]');
+    var max=getHistMax();
+    if(h.length>max){ h=h.slice(0,max); localStorage.setItem('kk-hist',JSON.stringify(h)); }
+  }catch(e){}
 }
 
 // ── PWA ──
@@ -2646,7 +2733,7 @@ window.addEventListener('load',function(){
   if(ios&&!sa) document.getElementById('btn-install').style.display='flex';
   if(!window.isSecureContext) document.getElementById('hwarn').style.display='block';
   var sv=localStorage.getItem('k-theme');
-  if(sv){var b=document.querySelector('.tbtn[data-t="'+sv+'"]');if(b)setTheme(sv,b);}
+  if(sv){setTheme(sv);}
   var fsv=localStorage.getItem('k-fsize')||'lg'; // varsayılan A+
   var fb=document.querySelector('#fsc button[data-sz="'+fsv+'"]');
   if(fb)setFS(fb);
